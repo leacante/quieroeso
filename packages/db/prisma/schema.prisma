@@ -1,0 +1,163 @@
+// QuieroEso data model. See docs/adr/0003-data-model.md for deviations from the MVP plan.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Better Auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  lists         WishList[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  /// Provider subject. For Google this is the stable `sub` claim.
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ---------------------------------------------------------------------------
+// Lists
+// ---------------------------------------------------------------------------
+
+enum ListVisibility {
+  PRIVATE
+  UNLISTED
+  PUBLIC
+}
+
+enum FundingMode {
+  WISHLIST
+  PER_ITEM
+}
+
+enum ItemSourceType {
+  MERCADOLIBRE
+  MANUAL
+}
+
+enum ItemAvailability {
+  AVAILABLE
+  UNAVAILABLE
+  UNKNOWN
+}
+
+model WishList {
+  id                   String         @id @default(cuid())
+  ownerId              String
+  owner                User           @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  title                String
+  description          String?
+  slug                 String         @unique
+  visibility           ListVisibility @default(PRIVATE)
+  fundingMode          FundingMode    @default(WISHLIST)
+  /// SHA-256 of the unlisted share token; used for lookups.
+  shareTokenHash       String?        @unique
+  /// AES-256-GCM envelope of the share token so the owner can copy the link again.
+  shareTokenEncrypted  String?
+  publishedAt          DateTime?
+  archivedAt           DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  items                ListItem[]
+
+  @@index([ownerId, archivedAt])
+  @@index([visibility, archivedAt])
+}
+
+model ListItem {
+  id                String           @id @default(cuid())
+  listId            String
+  list              WishList         @relation(fields: [listId], references: [id], onDelete: Restrict)
+  position          Int
+  sourceType        ItemSourceType
+  sourceUrl         String?
+  externalId        String?
+  /// ITEM or CATALOG_PRODUCT for Mercado Libre sources.
+  externalKind      String?
+  /// Presentation fields; the owner may edit them.
+  title             String
+  notes             String?
+  imageUrl          String?
+  /// Last known source data (ProductSnapshotInput), kept untouched by owner edits.
+  sourceSnapshot    Json?
+  priceMinor        BigInt?
+  targetAmountMinor BigInt?
+  currency          String           @default("ARS")
+  availability      ItemAvailability @default(UNKNOWN)
+  lastSyncedAt      DateTime?
+  lastSyncError     String?
+  /// Set while a refresh worker owns the row; stale claims expire.
+  syncClaimedAt     DateTime?
+  feeRateBps        Int              @default(100)
+  archivedAt        DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([listId, position])
+  @@index([listId, archivedAt])
+  @@index([externalId])
+  @@index([sourceType, lastSyncedAt])
+}

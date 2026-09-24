@@ -61,7 +61,8 @@ export function formatMinor(amountMinor: bigint, currency = "ARS", locale = "es-
     maximumFractionDigits: 2,
   });
   // Intl.NumberFormat accepts decimal strings, which keeps bigint precision intact.
-  const formatted = formatter.format(`${integer}.${cents.toString().padStart(2, "0")}`);
+  const decimal = `${integer}.${cents.toString().padStart(2, "0")}` as `${number}`;
+  const formatted = formatter.format(decimal);
   return negative ? `-${formatted}` : formatted;
 }
 

@@ -47,4 +47,14 @@ test("imports Mercado Libre links through the mock API", async ({ page, baseURL 
 
   const duplicate = await post(importUrl, { url: "https://meli.la/cafetera" });
   expect(duplicate.status()).toBe(409);
+
+  // 20 imports per user every 10 minutes: this user already made 11 attempts.
+  let limited = null;
+  for (let attempt = 0; attempt < 12 && !limited; attempt++) {
+    const response = await post(importUrl, { url: "https://meli.la/cafetera" });
+    if (response.status() === 429) limited = response;
+  }
+  expect(limited, "import rate limit not reached").not.toBeNull();
+  expect(Number(limited!.headers()["retry-after"])).toBeGreaterThan(0);
+  expect((await limited!.json()).code).toBe("RATE_LIMITED");
 });

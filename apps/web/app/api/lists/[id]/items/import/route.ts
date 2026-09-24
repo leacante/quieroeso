@@ -1,4 +1,11 @@
-import { importItemSchema, importListItem } from "@quieroeso/domain";
+import {
+  enforceRateLimit,
+  importItemSchema,
+  importListItem,
+  RATE_LIMITS,
+  rateLimitKeys,
+} from "@quieroeso/domain";
+import { getPrisma } from "@quieroeso/db";
 import { toOwnerItemDto } from "@/lib/server/dto";
 import { jsonResponse } from "@/lib/server/json";
 import { readJsonBody } from "@/lib/server/problem";
@@ -13,6 +20,7 @@ export const POST = handle(
     const user = await requireUser(request);
     const { id } = await params;
     const input = importItemSchema.parse(await readJsonBody(request, 16 * 1024));
+    await enforceRateLimit(getPrisma(), rateLimitKeys.import(user.id), RATE_LIMITS.importPerUser);
     const item = await importListItem(getImportDeps(), { listId: id, ownerId: user.id }, input);
     return jsonResponse({ item: toOwnerItemDto(item) }, { status: 201 });
   },

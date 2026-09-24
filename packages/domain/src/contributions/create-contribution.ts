@@ -36,6 +36,8 @@ export type ContributionDeps = {
   /** Access token of the list owner's Mercado Pago account (refreshed if needed). */
   getOwnerAccessToken(ownerId: string): Promise<{ accessToken: string; mercadoPagoUserId: string }>;
   createPreference(accessToken: string, input: PreferenceInput, idempotencyKey: string): Promise<CreatedPreference>;
+  /** Abuse control, called once the target list is known (e.g. per IP hash and list). */
+  enforceCheckoutLimit?(listId: string): Promise<void>;
   config: {
     minContributionMinor: bigint;
     appUrl: string;
@@ -100,6 +102,8 @@ export async function createContribution(
   if (list.fundingMode !== "PER_ITEM" || item.archivedAt || !item.targetAmountMinor) {
     throw new DomainError("INVALID_STATE", NOT_AVAILABLE);
   }
+
+  if (!existing) await deps.enforceCheckoutLimit?.(list.id);
 
   // Throws MERCADOPAGO_NOT_CONNECTED when the owner has no active connection.
   const owner = await deps.getOwnerAccessToken(list.ownerId);

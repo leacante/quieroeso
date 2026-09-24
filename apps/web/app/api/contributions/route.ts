@@ -1,4 +1,13 @@
-import { createContribution, createContributionSchema, DomainError } from "@quieroeso/domain";
+import {
+  createContribution,
+  createContributionSchema,
+  DomainError,
+  enforceRateLimit,
+  RATE_LIMITS,
+  rateLimitKeys,
+} from "@quieroeso/domain";
+import { getPrisma } from "@quieroeso/db";
+import { clientIpHash } from "@/lib/server/client-ip";
 import { jsonResponse } from "@/lib/server/json";
 import { readJsonBody } from "@/lib/server/problem";
 import { assertSameOrigin, handle } from "@/lib/server/route";
@@ -15,6 +24,15 @@ export const POST = handle(async (request) => {
     throw new DomainError("VALIDATION_FAILED", "Falta el encabezado Idempotency-Key (UUID).");
   }
   const input = createContributionSchema.parse(await readJsonBody(request, MAX_BODY_BYTES));
-  const result = await createContribution(getContributionDeps(), input, idempotencyKey.toLowerCase());
+  const ipHash = clientIpHash(request);
+  const result = await createContribution(
+    {
+      ...getContributionDeps(),
+      enforceCheckoutLimit: (listId) =>
+        enforceRateLimit(getPrisma(), rateLimitKeys.checkout(ipHash, listId), RATE_LIMITS.checkoutPerIpAndList),
+    },
+    input,
+    idempotencyKey.toLowerCase(),
+  );
   return jsonResponse(result, { status: 201 });
 });

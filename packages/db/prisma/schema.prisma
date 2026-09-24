@@ -213,7 +213,8 @@ model MercadoPagoConnection {
   id                    String                      @id @default(cuid())
   userId                String                      @unique
   user                  User                        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  mercadoPagoUserId     String                      @unique
+  /// Unique among ACTIVE connections only (partial index in migration 20260924_mp_active_unique).
+  mercadoPagoUserId     String
   /// AES-256-GCM envelopes; see packages/integrations/src/crypto/token-vault.ts
   encryptedAccessToken  String
   encryptedRefreshToken String
@@ -225,6 +226,8 @@ model MercadoPagoConnection {
   lastRefreshedAt       DateTime?
   createdAt             DateTime                    @default(now())
   updatedAt             DateTime                    @updatedAt
+
+  @@index([mercadoPagoUserId])
 }
 
 /// Single-use OAuth `state` with its PKCE verifier (encrypted), valid for 10 minutes.

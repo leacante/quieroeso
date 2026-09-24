@@ -8,3 +8,4 @@ export * from "./money/money";
 export * from "./security/audit-log";
 export * from "./lists/import-item";
 export * from "./lists/public-lists";
+export * from "./mercadopago/connection-service";

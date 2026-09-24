@@ -227,7 +227,12 @@ export const mpRoutes: Route[] = [
             <input type="hidden" name="seller" value="${key}">
             <button type="submit" data-testid="mp-seller-${key}">Autorizar como ${escapeHtml(seller.name)}</button></form>`,
         )
-        .join("");
+        .join("")
+        .concat(
+          `<form method="post" action="/mp/authorization/approve">${carry}
+            <input type="hidden" name="seller" value="new">
+            <button type="submit" class="secondary" data-testid="mp-seller-new">Autorizar con una cuenta nueva</button></form>`,
+        );
       sendHtml(
         response,
         200,
@@ -249,7 +254,11 @@ export const mpRoutes: Route[] = [
       const body = parseBody(request);
       const target = new URL(String(body.redirect_uri ?? ""));
       if (typeof body.state === "string") target.searchParams.set("state", body.state);
-      const seller = MP_TEST_SELLERS[String(body.seller ?? "")];
+      // "new" creates a fresh seller account, so tests do not share Mercado Pago identities.
+      const seller =
+        body.seller === "new"
+          ? { userId: 2_000_000 + Math.floor(Math.random() * 1_000_000), name: "Cuenta nueva" }
+          : MP_TEST_SELLERS[String(body.seller ?? "")];
       if (decision === "deny" || !seller) {
         target.searchParams.set("error", "access_denied");
         redirect(response, target.toString());

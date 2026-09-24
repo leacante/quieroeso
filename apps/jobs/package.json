@@ -1,0 +1,20 @@
+{
+  "name": "@quieroeso/jobs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "refresh-products": "tsx src/refresh-products.ts",
+    "cleanup": "tsx src/cleanup.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@quieroeso/config": "workspace:*",
+    "@quieroeso/db": "workspace:*",
+    "@quieroeso/domain": "workspace:*",
+    "@quieroeso/integrations": "workspace:*",
+    "@quieroeso/observability": "workspace:*",
+    "tsx": "4.23.15"
+  }
+}

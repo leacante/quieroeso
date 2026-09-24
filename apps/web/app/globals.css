@@ -1,0 +1,75 @@
+@import "tailwindcss";
+@import "@quieroeso/ui/tokens.css";
+
+@source "../../../packages/ui/src";
+
+@theme inline {
+  --color-primary: var(--qe-primary);
+  --color-primary-hover: var(--qe-primary-hover);
+  --color-on-primary: var(--qe-on-primary);
+  --color-secondary: var(--qe-secondary);
+  --color-on-secondary: var(--qe-on-secondary);
+  --color-accent: var(--qe-accent);
+  --color-accent-soft: var(--qe-accent-soft);
+  --color-on-accent: var(--qe-on-accent);
+  --color-background: var(--qe-background);
+  --color-foreground: var(--qe-foreground);
+  --color-card: var(--qe-card);
+  --color-card-foreground: var(--qe-card-foreground);
+  --color-muted: var(--qe-muted);
+  --color-muted-foreground: var(--qe-muted-foreground);
+  --color-border: var(--qe-border);
+  --color-border-strong: var(--qe-border-strong);
+  --color-destructive: var(--qe-destructive);
+  --color-on-destructive: var(--qe-on-destructive);
+  --color-success: var(--qe-success);
+  --color-success-soft: var(--qe-success-soft);
+  --color-warning-soft: var(--qe-warning-soft);
+  --color-warning-foreground: var(--qe-warning-foreground);
+  --color-ring: var(--qe-ring);
+
+  --font-heading: var(--font-fredoka), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-block: var(--qe-shadow-block);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--qe-background);
+    color: var(--qe-foreground);
+    font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-fredoka), ui-rounded, system-ui, sans-serif;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--qe-ring);
+    outline-offset: 2px;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+}

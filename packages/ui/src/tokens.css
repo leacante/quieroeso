@@ -1,0 +1,87 @@
+/*
+ * QuieroEso design tokens. Source of truth: design-system/quieroeso/MASTER.md
+ * Components must use these semantic tokens, never raw hex values.
+ */
+:root {
+  color-scheme: light;
+
+  --qe-primary: #dc2626;
+  --qe-primary-hover: #b91c1c;
+  --qe-on-primary: #ffffff;
+  --qe-secondary: #d97706;
+  --qe-on-secondary: #000000;
+  --qe-accent: #ec4899;
+  --qe-accent-soft: #fce7f3;
+  --qe-on-accent: #000000;
+  --qe-background: #fff1f2;
+  --qe-foreground: #0f172a;
+  --qe-card: #ffffff;
+  --qe-card-foreground: #0f172a;
+  --qe-muted: #fcf1f1;
+  --qe-muted-foreground: #475569;
+  --qe-border: #fae4e4;
+  --qe-border-strong: #b98a8f;
+  --qe-destructive: #b91c1c;
+  --qe-on-destructive: #ffffff;
+  --qe-success: #15803d;
+  --qe-success-soft: #dcfce7;
+  --qe-warning-soft: #fef3c7;
+  --qe-warning-foreground: #92400e;
+  --qe-ring: #dc2626;
+
+  --qe-radius-sm: 0.5rem;
+  --qe-radius-md: 0.75rem;
+  --qe-radius-lg: 1rem;
+  --qe-radius-xl: 1.5rem;
+
+  --qe-shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
+  --qe-shadow-md: 0 4px 6px rgb(15 23 42 / 0.08);
+  --qe-shadow-lg: 0 10px 15px rgb(15 23 42 / 0.1);
+  --qe-shadow-xl: 0 20px 25px rgb(15 23 42 / 0.15);
+  --qe-shadow-block: 4px 4px 0 0 rgb(15 23 42 / 0.9);
+
+  --qe-duration-fast: 150ms;
+  --qe-duration-base: 200ms;
+  --qe-duration-slow: 300ms;
+  --qe-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --qe-primary: #f87171;
+    --qe-primary-hover: #fca5a5;
+    --qe-on-primary: #1a0b0e;
+    --qe-secondary: #fbbf24;
+    --qe-on-secondary: #1a0b0e;
+    --qe-accent: #f472b6;
+    --qe-accent-soft: #3b1730;
+    --qe-on-accent: #1a0b0e;
+    --qe-background: #160b0e;
+    --qe-foreground: #f8fafc;
+    --qe-card: #231317;
+    --qe-card-foreground: #f8fafc;
+    --qe-muted: #2d1a1f;
+    --qe-muted-foreground: #cbd5e1;
+    --qe-border: #3f252c;
+    --qe-border-strong: #8a5f68;
+    --qe-destructive: #fca5a5;
+    --qe-on-destructive: #1a0b0e;
+    --qe-success: #4ade80;
+    --qe-success-soft: #12301f;
+    --qe-warning-soft: #3a2a0c;
+    --qe-warning-foreground: #fcd34d;
+    --qe-ring: #fca5a5;
+
+    --qe-shadow-block: 4px 4px 0 0 rgb(0 0 0 / 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --qe-duration-fast: 0ms;
+    --qe-duration-base: 0ms;
+    --qe-duration-slow: 0ms;
+  }
+}

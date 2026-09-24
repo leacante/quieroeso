@@ -1,0 +1,23 @@
+{
+  "name": "@quieroeso/integrations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./crypto": "./src/crypto/index.ts",
+    "./mercadolibre": "./src/mercadolibre/index.ts",
+    "./mercadopago": "./src/mercadopago/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@quieroeso/observability": "workspace:*",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "vitest": "5.0.1"
+  }
+}

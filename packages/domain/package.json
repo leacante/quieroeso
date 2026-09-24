@@ -1,0 +1,25 @@
+{
+  "name": "@quieroeso/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration"
+  },
+  "dependencies": {
+    "@quieroeso/config": "workspace:*",
+    "@quieroeso/db": "workspace:*",
+    "@quieroeso/integrations": "workspace:*",
+    "@quieroeso/observability": "workspace:*",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "vitest": "5.0.1"
+  }
+}

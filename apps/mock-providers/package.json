@@ -1,0 +1,19 @@
+{
+  "name": "@quieroeso/mock-providers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "tsx": "4.23.15"
+  },
+  "devDependencies": {
+    "vitest": "5.0.1"
+  }
+}

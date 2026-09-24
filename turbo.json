@@ -1,0 +1,36 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "globalDependencies": [".env.example", "tsconfig.base.json"],
+  "globalPassThroughEnv": ["NODE_ENV", "CI"],
+  "tasks": {
+    "generate": {
+      "cache": false,
+      "outputs": ["src/generated/**"]
+    },
+    "build": {
+      "dependsOn": ["^build", "^generate", "generate"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": ["APP_URL", "NEXT_PUBLIC_*"]
+    },
+    "lint": {
+      "dependsOn": ["^generate", "generate"]
+    },
+    "typecheck": {
+      "dependsOn": ["^generate", "generate"]
+    },
+    "test": {
+      "dependsOn": ["^generate", "generate"]
+    },
+    "test:integration": {
+      "dependsOn": ["^generate", "generate"],
+      "cache": false,
+      "passThroughEnv": ["DATABASE_URL", "TEST_DATABASE_URL"]
+    },
+    "dev": {
+      "dependsOn": ["^generate"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

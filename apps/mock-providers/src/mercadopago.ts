@@ -58,8 +58,9 @@ const refreshTokens = new Map<string, Seller>();
 const preferences = new Map<string, Preference>();
 const preferencesByKey = new Map<string, string>();
 const payments = new Map<number, Payment>();
-let nextPaymentId = 90_000_001;
-let nextEventId = 70_000_001;
+// Seeded from the clock so ids stay unique across mock restarts, like real Mercado Pago ids.
+let nextPaymentId = Date.now();
+let nextEventId = Date.now() * 10;
 let apiOutage = false;
 
 function now(): string {

@@ -1,4 +1,23 @@
+# Local stack: `docker compose up --build` → http://localhost:3000
+# Everything runs offline against apps/mock-providers (Google, Mercado Libre, Mercado Pago).
+# Values come from `.env` when present (pnpm env:setup), otherwise from the local defaults below.
 name: quieroeso
+
+x-app-env: &app-env
+  NODE_ENV: production
+  APP_ENV: local
+  APP_URL: http://localhost:3000
+  BETTER_AUTH_URL: http://localhost:3000
+  DATABASE_URL: postgresql://quieroeso:quieroeso@postgres:5432/quieroeso
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-local-docker-only-secret-0123456789abcdef}
+  TOKEN_ENCRYPTION_KEY_V1: ${TOKEN_ENCRYPTION_KEY_V1:-bG9jYWwtZG9ja2VyLW9ubHkta2V5LTMyLWJ5dGVzISE=}
+  ACTIVE_TOKEN_KEY_VERSION: ${ACTIVE_TOKEN_KEY_VERSION:-1}
+  IP_HASH_SECRET: ${IP_HASH_SECRET:-local-docker-only-ip-hash-secret-0123456789}
+  MIN_CONTRIBUTION_MINOR: ${MIN_CONTRIBUTION_MINOR:-100000}
+  MOCK_PROVIDERS: "true"
+  MOCK_PROVIDERS_PUBLIC_URL: http://localhost:4010
+  MOCK_PROVIDERS_INTERNAL_URL: http://mocks:4010
+  LOG_LEVEL: ${LOG_LEVEL:-info}
 
 services:
   postgres:
@@ -17,6 +36,57 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
+  mocks:
+    build:
+      context: .
+      dockerfile: apps/mock-providers/Dockerfile
+    environment:
+      PUBLIC_URL: http://localhost:4010
+      # Inside Docker, "localhost:3000" in notification URLs is the web container.
+      WEBHOOK_TARGET_ORIGIN: http://web:3000
+    ports:
+      - "4010:4010"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: quieroeso-web:local
+    command: ["migrate"]
+    environment:
+      DATABASE_URL: postgresql://quieroeso:quieroeso@postgres:5432/quieroeso
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    image: quieroeso-web:local
+    environment:
+      <<: *app-env
+      SERVICE_NAME: web
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mocks:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # On demand: docker compose run --rm jobs            (refresh products)
+  #            docker compose run --rm jobs ./node_modules/.bin/tsx src/cleanup.ts
+  jobs:
+    build:
+      context: .
+      dockerfile: apps/jobs/Dockerfile
+    profiles: ["jobs"]
+    environment:
+      <<: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres-data:

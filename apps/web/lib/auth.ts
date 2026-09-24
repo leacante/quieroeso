@@ -86,6 +86,11 @@ function createAuth(env: AppEnvironment) {
         },
       },
     },
+    rateLimit: {
+      // The default 3 per 10s targets password sign-ins; starting an OAuth redirect
+      // carries no credentials to guess, so it only needs flood protection.
+      customRules: { "/sign-in/social": { window: 60, max: 20 } },
+    },
     telemetry: { enabled: false },
     plugins: [...(provider.plugins ?? []), nextCookies()],
   });

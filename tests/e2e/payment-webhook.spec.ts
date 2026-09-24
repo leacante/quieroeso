@@ -1,6 +1,14 @@
-import { expect, test, type APIRequestContext } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { connectMercadoPago, contribute, createFundableList } from "./support/flows";
 import { MOCK_URL, signInAsNewUser } from "./support/helpers";
+
+/** Webhooks are processed after the 200 response, so state converges shortly after. */
+async function eventually(page: Page, assertion: () => Promise<void>) {
+  await expect(async () => {
+    await page.reload();
+    await assertion();
+  }).toPass({ timeout: 15_000, intervals: [250, 500, 1_000] });
+}
 
 type MockPayment = { id: number; status: string; external_reference: string; transaction_amount: number };
 
@@ -43,7 +51,7 @@ test.describe("Mercado Pago webhooks", () => {
     expect((await resend.json()).webhookStatuses).toEqual([200, 200, 200]);
 
     await page.goto("/dashboard/contributions");
-    await expect(page.getByTestId("contribution-row")).toHaveCount(1);
+    await eventually(page, () => expect(page.getByTestId("contribution-row")).toHaveCount(1));
     await expect(page.getByTestId("total-amount")).toHaveText("$ 50.000");
     await expect(page.getByTestId("total-fees")).toHaveText("$ 0");
     await expect(page.getByText("Tía Marta")).toBeVisible();
@@ -55,8 +63,9 @@ test.describe("Mercado Pago webhooks", () => {
 
     // Refund issued from Mercado Pago.
     await request.post(`${MOCK_URL}/_admin/mp/payments/${payment!.id}/status`, { data: { status: "refunded" } });
-    await page.reload();
-    await expect(page.getByTestId("contribution-row").filter({ hasText: "Cafetera" })).toContainText("Reembolsado");
+    await eventually(page, () =>
+      expect(page.getByTestId("contribution-row").filter({ hasText: "Cafetera" })).toContainText("Reembolsado"),
+    );
     await expect(page.getByTestId("total-amount")).toHaveText("$ 0");
 
     // Chargeback on a fresh approved payment.
@@ -66,9 +75,10 @@ test.describe("Mercado Pago webhooks", () => {
     const secondId = new URL(visitor.url()).searchParams.get("contribution")!;
     const [second] = await paymentsFor(request, secondId);
     await request.post(`${MOCK_URL}/_admin/mp/payments/${second!.id}/status`, { data: { status: "charged_back" } });
-    await page.reload();
-    await expect(page.getByTestId("contribution-row").filter({ hasText: "Auriculares" }).first()).toContainText(
-      "Contracargo",
+    await eventually(page, () =>
+      expect(page.getByTestId("contribution-row").filter({ hasText: "Auriculares" }).first()).toContainText(
+        "Contracargo",
+      ),
     );
   });
 

@@ -58,7 +58,12 @@ export async function recordWebhookEvent(db: PrismaClient, notification: Webhook
   const existing = await db.webhookEvent.findUnique({
     where: { provider_providerEventId: { provider: PROVIDER, providerEventId: notification.providerEventId } },
   });
-  if (existing) return { id: existing.id, status: existing.processedAt ? "DUPLICATE" : "RETRY" };
+  if (existing) {
+    if (existing.payloadHash !== payloadHash) {
+      getLogger().warn({ webhookEventId: existing.id }, "notification id reused with a different payload");
+    }
+    return { id: existing.id, status: existing.processedAt ? "DUPLICATE" : "RETRY" };
+  }
   try {
     const created = await db.webhookEvent.create({
       data: {

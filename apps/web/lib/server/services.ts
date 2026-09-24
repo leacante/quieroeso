@@ -22,17 +22,12 @@ import {
   getPayment,
   refreshAccessToken,
 } from "@quieroeso/integrations/mercadopago";
+import {
+  mercadoLibreSettings,
+  mercadoPagoSettings,
+  type MercadoPagoSettings,
+} from "@quieroeso/config";
 import { getEnv } from "./env";
-
-/** Credentials accepted by apps/mock-providers. Only used when MOCK_PROVIDERS=true. */
-export const MOCK_CREDENTIALS = {
-  meli: { clientId: "mock-meli-client", clientSecret: "mock-meli-secret" },
-  mp: {
-    clientId: "mock-mp-client",
-    clientSecret: "mock-mp-secret",
-    webhookSecret: "mock-mp-webhook-secret",
-  },
-} as const;
 
 let vault: TokenVault | undefined;
 let meli: MercadoLibreGateway | undefined;
@@ -48,48 +43,29 @@ export function getListDeps(): ListDeps {
 }
 
 export function getMercadoLibreGateway(): MercadoLibreGateway {
-  const env = getEnv();
-  meli ??= env.MOCK_PROVIDERS
-    ? createMercadoLibreClient({
-        baseUrl: `${env.MOCK_PROVIDERS_INTERNAL_URL}/meli`,
-        ...MOCK_CREDENTIALS.meli,
-      })
-    : createMercadoLibreClient({
-        baseUrl: env.MELI_API_BASE_URL,
-        clientId: env.MELI_CLIENT_ID ?? "",
-        clientSecret: env.MELI_CLIENT_SECRET ?? "",
-      });
+  const settings = mercadoLibreSettings(getEnv());
+  meli ??= createMercadoLibreClient({
+    baseUrl: settings.apiBaseUrl,
+    clientId: settings.clientId,
+    clientSecret: settings.clientSecret,
+  });
   return meli;
 }
 
 export function getImportDeps(): ImportDeps {
-  const env = getEnv();
+  const settings = mercadoLibreSettings(getEnv());
   return {
     db: getPrisma(),
     meli: getMercadoLibreGateway(),
-    fetchHop:
-      env.MOCK_PROVIDERS && env.MOCK_PROVIDERS_INTERNAL_URL
-        ? createMockHopFetcher(env.MOCK_PROVIDERS_INTERNAL_URL)
-        : guardedHopFetcher,
+    fetchHop: settings.mockShortLinkBaseUrl
+      ? createMockHopFetcher(settings.mockShortLinkBaseUrl)
+      : guardedHopFetcher,
   };
 }
 
 /** Mercado Pago endpoints and credentials for the current environment. */
-export function getMercadoPagoConfig() {
-  const env = getEnv();
-  const mock = env.MOCK_PROVIDERS;
-  return {
-    authBaseUrl: mock ? `${env.MOCK_PROVIDERS_PUBLIC_URL}/mp` : env.MP_AUTH_BASE_URL,
-    apiBaseUrl: mock ? `${env.MOCK_PROVIDERS_INTERNAL_URL}/mp` : env.MP_API_BASE_URL,
-    clientId: mock ? MOCK_CREDENTIALS.mp.clientId : (env.MP_CLIENT_ID ?? ""),
-    clientSecret: mock ? MOCK_CREDENTIALS.mp.clientSecret : (env.MP_CLIENT_SECRET ?? ""),
-    webhookSecret: mock ? MOCK_CREDENTIALS.mp.webhookSecret : (env.MP_WEBHOOK_SECRET ?? ""),
-    redirectUri: new URL("/api/integrations/mercadopago/callback", env.APP_URL).toString(),
-    notificationUrl: new URL("/api/webhooks/mercadopago", env.APP_URL).toString(),
-    checkoutHosts: mock
-      ? [new URL(env.MOCK_PROVIDERS_PUBLIC_URL ?? "http://localhost").host]
-      : env.MP_CHECKOUT_HOSTS,
-  };
+export function getMercadoPagoConfig(): MercadoPagoSettings {
+  return mercadoPagoSettings(getEnv());
 }
 
 export function getConnectionDeps(): ConnectionDeps {

@@ -12,3 +12,4 @@ export * from "./mercadopago/connection-service";
 export * from "./contributions/create-contribution";
 export * from "./contributions/process-payment-event";
 export * from "./contributions/owner-contributions";
+export * from "./lists/refresh-product-snapshots";

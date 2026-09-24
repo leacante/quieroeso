@@ -14,6 +14,7 @@ export default defineConfig({
         test: {
           name: "integration",
           include: ["src/**/*.integration.test.ts"],
+          globalSetup: ["./src/testing/global-setup.ts"],
           setupFiles: ["./src/testing/integration-setup.ts"],
           // Integration tests share one database and truncate between tests.
           fileParallelism: false,

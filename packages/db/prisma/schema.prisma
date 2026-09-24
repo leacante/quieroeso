@@ -15,16 +15,18 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model User {
-  id            String    @id
+  id            String                 @id
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String                 @unique
+  emailVerified Boolean                @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
   sessions      Session[]
   accounts      Account[]
   lists         WishList[]
+  entitlement   FreeTierEntitlement?
+  mercadoPago   MercadoPagoConnection?
 
   @@map("user")
 }
@@ -105,23 +107,24 @@ enum ItemAvailability {
 }
 
 model WishList {
-  id                   String         @id @default(cuid())
+  id                   String               @id @default(cuid())
   ownerId              String
-  owner                User           @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  owner                User                 @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   title                String
   description          String?
-  slug                 String         @unique
-  visibility           ListVisibility @default(PRIVATE)
-  fundingMode          FundingMode    @default(WISHLIST)
+  slug                 String               @unique
+  visibility           ListVisibility       @default(PRIVATE)
+  fundingMode          FundingMode          @default(WISHLIST)
   /// SHA-256 of the unlisted share token; used for lookups.
-  shareTokenHash       String?        @unique
+  shareTokenHash       String?              @unique
   /// AES-256-GCM envelope of the share token so the owner can copy the link again.
   shareTokenEncrypted  String?
   publishedAt          DateTime?
   archivedAt           DateTime?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
   items                ListItem[]
+  promotionEntitlement FreeTierEntitlement? @relation("FirstPublishedList")
 
   @@index([ownerId, archivedAt])
   @@index([visibility, archivedAt])
@@ -155,9 +158,166 @@ model ListItem {
   archivedAt        DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+  freeSlot          FreeProductSlot?
+  contributions     Contribution[]
 
   @@unique([listId, position])
   @@index([listId, archivedAt])
   @@index([externalId])
   @@index([sourceType, lastSyncedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Platform fee promotion
+// ---------------------------------------------------------------------------
+
+/// Fixed on the first successful publication of any of the user's lists; never reassigned.
+model FreeTierEntitlement {
+  id                   String            @id @default(cuid())
+  userId               String            @unique
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  firstPublishedListId String            @unique
+  firstPublishedList   WishList          @relation("FirstPublishedList", fields: [firstPublishedListId], references: [id], onDelete: Restrict)
+  assignedAt           DateTime          @default(now())
+  slots                FreeProductSlot[]
+}
+
+/// One of the eight 0% slots. `consumedAt` is set on the item's first approved
+/// contribution and is permanent; unconsumed slots are released when their item goes.
+model FreeProductSlot {
+  id            String              @id @default(cuid())
+  entitlementId String
+  entitlement   FreeTierEntitlement @relation(fields: [entitlementId], references: [id], onDelete: Restrict)
+  slotNumber    Int
+  listItemId    String?             @unique
+  listItem      ListItem?           @relation(fields: [listItemId], references: [id], onDelete: Restrict)
+  assignedAt    DateTime?
+  consumedAt    DateTime?
+  releasedAt    DateTime?
+
+  @@unique([entitlementId, slotNumber])
+}
+
+// ---------------------------------------------------------------------------
+// Mercado Pago
+// ---------------------------------------------------------------------------
+
+enum MercadoPagoConnectionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  DISCONNECTED
+}
+
+model MercadoPagoConnection {
+  id                    String                      @id @default(cuid())
+  userId                String                      @unique
+  user                  User                        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  mercadoPagoUserId     String                      @unique
+  /// AES-256-GCM envelopes; see packages/integrations/src/crypto/token-vault.ts
+  encryptedAccessToken  String
+  encryptedRefreshToken String
+  tokenExpiresAt        DateTime
+  keyVersion            Int
+  status                MercadoPagoConnectionStatus @default(ACTIVE)
+  liveMode              Boolean                     @default(false)
+  scope                 String?
+  lastRefreshedAt       DateTime?
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+}
+
+/// Single-use OAuth `state` with its PKCE verifier (encrypted), valid for 10 minutes.
+model OAuthState {
+  id                    String    @id @default(cuid())
+  userId                String
+  provider              String
+  stateHash             String    @unique
+  encryptedCodeVerifier String
+  returnPath            String?
+  expiresAt             DateTime
+  consumedAt            DateTime?
+  createdAt             DateTime  @default(now())
+
+  @@index([expiresAt])
+}
+
+enum ContributionStatus {
+  CREATED
+  CHECKOUT_CREATED
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  REFUNDED
+  CHARGED_BACK
+}
+
+model Contribution {
+  id                     String             @id @default(cuid())
+  listItemId             String
+  listItem               ListItem           @relation(fields: [listItemId], references: [id], onDelete: Restrict)
+  amountMinor            BigInt
+  currency               String             @default("ARS")
+  contributorName        String?
+  contributorMessage     String?
+  status                 ContributionStatus @default(CREATED)
+  platformFeeRateBps     Int
+  platformFeeAmountMinor BigInt
+  /// Mercado Pago user id of the collector at creation time; payments must match it.
+  collectorId            String
+  mpPreferenceId         String?            @unique
+  mpPaymentId            String?            @unique
+  mpStatusDetail         String?
+  /// Client-supplied Idempotency-Key of the checkout request.
+  idempotencyKey         String             @unique
+  approvedAt             DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([listItemId, status])
+  @@index([status, createdAt])
+}
+
+model WebhookEvent {
+  id              String    @id @default(cuid())
+  provider        String
+  providerEventId String
+  topic           String?
+  resourceId      String?
+  payloadHash     String
+  result          String?
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@unique([provider, providerEventId])
+  @@index([provider, resourceId])
+}
+
+// ---------------------------------------------------------------------------
+// Abuse controls and audit
+// ---------------------------------------------------------------------------
+
+/// Fixed-window counters. `key` never contains raw IPs (daily HMAC instead).
+model RateLimitBucket {
+  key         String
+  windowStart DateTime
+  count       Int      @default(0)
+  expiresAt   DateTime
+
+  @@id([key, windowStart])
+  @@index([expiresAt])
+}
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  targetType  String
+  targetId    String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([actorUserId, createdAt])
 }

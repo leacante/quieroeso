@@ -7,6 +7,7 @@ import {
   type ContributionDeps,
   type ImportDeps,
   type ListDeps,
+  type PaymentEventDeps,
 } from "@quieroeso/domain";
 import { createTokenVault, type TokenVault } from "@quieroeso/integrations/crypto";
 import {
@@ -18,6 +19,7 @@ import {
 import {
   createPreference,
   exchangeAuthorizationCode,
+  getPayment,
   refreshAccessToken,
 } from "@quieroeso/integrations/mercadopago";
 import { getEnv } from "./env";
@@ -127,5 +129,24 @@ export function getContributionDeps(): ContributionDeps {
       notificationUrl: mp.notificationUrl,
       checkoutHosts: mp.checkoutHosts,
     },
+  };
+}
+
+export function getPaymentEventDeps(): PaymentEventDeps {
+  const db = getPrisma();
+  const mp = getMercadoPagoConfig();
+  const connection = getConnectionDeps();
+  return {
+    db,
+    async getAccessTokenForCollector(collectorId) {
+      const owner = await db.mercadoPagoConnection.findFirst({
+        where: { mercadoPagoUserId: collectorId, status: "ACTIVE" },
+        select: { userId: true },
+      });
+      if (!owner) return null;
+      const { accessToken } = await getActiveAccessToken(connection, owner.userId);
+      return { accessToken };
+    },
+    getPayment: (accessToken, paymentId) => getPayment({ apiBaseUrl: mp.apiBaseUrl }, accessToken, paymentId),
   };
 }

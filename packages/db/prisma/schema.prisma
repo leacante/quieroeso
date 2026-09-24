@@ -288,6 +288,7 @@ model WebhookEvent {
   providerEventId String
   topic           String?
   resourceId      String?
+  collectorId     String?
   payloadHash     String
   result          String?
   processedAt     DateTime?

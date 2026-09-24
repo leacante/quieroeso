@@ -8,8 +8,7 @@ WORKDIR /app
 
 FROM base AS builder
 COPY . .
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm --filter @quieroeso/mock-providers deploy --prod --legacy /out/mocks
+RUN pnpm --filter @quieroeso/mock-providers deploy --prod --legacy /out/mocks
 
 FROM node:24-bookworm-slim AS runner
 ENV NODE_ENV=production PORT=4010

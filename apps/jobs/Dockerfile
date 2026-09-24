@@ -17,12 +17,10 @@ RUN pnpm dlx turbo@2.11.3 prune @quieroeso/jobs --docker
 FROM base AS builder
 COPY --from=pruner /app/out/json/ .
 COPY .pnpmfile.cjs .npmrc tsconfig.base.json ./
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter @quieroeso/db generate
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm --filter @quieroeso/jobs deploy --prod --legacy /out/jobs
+RUN pnpm --filter @quieroeso/jobs deploy --prod --legacy /out/jobs
 
 FROM node:24-bookworm-slim AS runner
 ENV NODE_ENV=production

@@ -29,7 +29,7 @@ const PREVIEW_ITEMS = [
 function ListPreview() {
   return (
     <Card className="w-full max-w-sm rotate-1 p-5 motion-reduce:rotate-0" aria-hidden="true">
-      <p className="text-sm font-bold text-primary">Lista de deseos</p>
+      <p className="text-sm font-bold text-primary-text">Lista de deseos</p>
       <p className="font-heading text-2xl font-bold">Mi cumple 30</p>
       <ul className="mt-4 flex flex-col gap-3">
         {PREVIEW_ITEMS.map((item) => (

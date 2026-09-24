@@ -6,6 +6,7 @@
 @theme inline {
   --color-primary: var(--qe-primary);
   --color-primary-hover: var(--qe-primary-hover);
+  --color-primary-text: var(--qe-primary-text);
   --color-on-primary: var(--qe-on-primary);
   --color-secondary: var(--qe-secondary);
   --color-on-secondary: var(--qe-on-secondary);

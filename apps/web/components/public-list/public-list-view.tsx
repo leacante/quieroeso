@@ -17,7 +17,7 @@ export function PublicListPage({
     <main id="contenido" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:py-12">
       <header className="flex flex-col gap-4 border-b-2 border-foreground pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-2">
-          <p className="inline-flex items-center gap-2 text-sm font-bold text-primary">
+          <p className="inline-flex items-center gap-2 text-sm font-bold text-primary-text">
             <Gift className="size-4" aria-hidden="true" />
             Lista de deseos
           </p>

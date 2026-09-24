@@ -32,7 +32,8 @@
 | Muted | `#FCF1F1` | `--color-muted` |
 | Muted Foreground | `#475569` | `--color-muted-foreground` |
 | Border | `#FAE4E4` | `--color-border` |
-| Destructive | `#DC2626` | `--qe-destructive` |
+| Destructive | `#DC2626` | `--qe-primary-text` | `#B91C1C` | Small text in the primary color; `#DC2626` on `#FFF1F2` is 4.39:1 (axe). |
+| `--qe-destructive` |
 | On Destructive | `#FFFFFF` | `--color-on-destructive` |
 | Ring | `#DC2626` | `--color-ring` |
 

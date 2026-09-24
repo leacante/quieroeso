@@ -43,3 +43,10 @@ export function minorToDecimalNumber(amountMinor: bigint): number {
   const cents = amountMinor % 100n;
   return Number(`${integer}.${cents.toString().padStart(2, "0")}`);
 }
+
+/** Exact decimal string for minor units, e.g. 123456n -> "1234.56". */
+export function minorToDecimalString(amountMinor: bigint): string {
+  const negative = amountMinor < 0n;
+  const abs = negative ? -amountMinor : amountMinor;
+  return `${negative ? "-" : ""}${abs / 100n}.${(abs % 100n).toString().padStart(2, "0")}`;
+}

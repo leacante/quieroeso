@@ -7,6 +7,8 @@
 
   --qe-primary: #dc2626;
   --qe-primary-hover: #b91c1c;
+  /* Primary-colored small text: 5.9:1 on --qe-background (#dc2626 is only 4.4:1). */
+  --qe-primary-text: #b91c1c;
   --qe-on-primary: #ffffff;
   --qe-secondary: #d97706;
   --qe-on-secondary: #000000;
@@ -52,6 +54,7 @@
 
     --qe-primary: #f87171;
     --qe-primary-hover: #fca5a5;
+    --qe-primary-text: #fca5a5;
     --qe-on-primary: #1a0b0e;
     --qe-secondary: #fbbf24;
     --qe-on-secondary: #1a0b0e;

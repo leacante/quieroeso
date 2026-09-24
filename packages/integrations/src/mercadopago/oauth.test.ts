@@ -2,8 +2,17 @@ import { createHash, createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { createPreference, getPayment } from "./client";
 import { MercadoPagoApiError } from "./http";
-import { buildAuthorizationUrl, createPkcePair, exchangeAuthorizationCode, refreshAccessToken } from "./oauth";
-import { buildSignatureManifest, parseSignatureHeader, verifyWebhookSignature } from "./webhook-signature";
+import {
+  buildAuthorizationUrl,
+  createPkcePair,
+  exchangeAuthorizationCode,
+  refreshAccessToken,
+} from "./oauth";
+import {
+  buildSignatureManifest,
+  parseSignatureHeader,
+  verifyWebhookSignature,
+} from "./webhook-signature";
 
 function fakeFetch(handler: (request: Request) => Response | Promise<Response>) {
   const calls: Request[] = [];
@@ -91,7 +100,10 @@ describe("token exchange", () => {
     await expect(refreshAccessToken(config(ok.fn), "TG-old")).resolves.toMatchObject({
       refreshToken: "TG-refresh",
     });
-    expect(await ok.calls[0]!.json()).toMatchObject({ grant_type: "refresh_token", refresh_token: "TG-old" });
+    expect(await ok.calls[0]!.json()).toMatchObject({
+      grant_type: "refresh_token",
+      refresh_token: "TG-old",
+    });
 
     const revoked = fakeFetch(() => Response.json({ error: "invalid_grant" }, { status: 400 }));
     await expect(refreshAccessToken(config(revoked.fn), "TG-old")).rejects.toMatchObject({
@@ -103,7 +115,10 @@ describe("token exchange", () => {
 describe("Checkout Pro API", () => {
   it("creates a single-item preference with idempotency key and optional fee", async () => {
     const api = fakeFetch(() =>
-      Response.json({ id: "pref-1", init_point: "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-1" }),
+      Response.json({
+        id: "pref-1",
+        init_point: "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-1",
+      }),
     );
     const input = {
       item: { id: "item_1", title: "Cafetera", unitPrice: 1000 },
@@ -112,7 +127,12 @@ describe("Checkout Pro API", () => {
       backUrls: { success: "https://q/s", pending: "https://q/p", failure: "https://q/f" },
     };
     await createPreference(config(api.fn), "APP_USR-seller", input, "contribution_1");
-    await createPreference(config(api.fn), "APP_USR-seller", { ...input, marketplaceFee: 10 }, "contribution_2");
+    await createPreference(
+      config(api.fn),
+      "APP_USR-seller",
+      { ...input, marketplaceFee: 10 },
+      "contribution_2",
+    );
 
     const [free, paid] = api.calls;
     expect(free!.headers.get("x-idempotency-key")).toBe("contribution_1");
@@ -151,9 +171,9 @@ describe("webhook signature", () => {
     `ts=${ts},v1=${createHmac("sha256", secret).update(`id:${dataId};request-id:${requestId};ts:${ts};`).digest("hex")}`;
 
   it("builds the documented manifest", () => {
-    expect(buildSignatureManifest({ dataId: "ABC123", requestId: "req-1", ts: "1742505638683" })).toBe(
-      "id:abc123;request-id:req-1;ts:1742505638683;",
-    );
+    expect(
+      buildSignatureManifest({ dataId: "ABC123", requestId: "req-1", ts: "1742505638683" }),
+    ).toBe("id:abc123;request-id:req-1;ts:1742505638683;");
   });
 
   it("accepts valid signatures and rejects tampering", () => {
@@ -168,7 +188,10 @@ describe("webhook signature", () => {
   });
 
   it("parses headers defensively", () => {
-    expect(parseSignatureHeader(" v1=" + "a".repeat(64) + ", ts=1")).toEqual({ ts: "1", v1: "a".repeat(64) });
+    expect(parseSignatureHeader(" v1=" + "a".repeat(64) + ", ts=1")).toEqual({
+      ts: "1",
+      v1: "a".repeat(64),
+    });
     expect(parseSignatureHeader("ts=abc,v1=zz")).toBeNull();
     expect(parseSignatureHeader("garbage")).toBeNull();
   });

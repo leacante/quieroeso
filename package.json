@@ -18,7 +18,7 @@
     "db:generate": "pnpm --filter @quieroeso/db generate",
     "db:migrate": "pnpm --filter @quieroeso/db migrate:dev",
     "db:deploy": "pnpm --filter @quieroeso/db migrate:deploy",
-    "db:seed": "pnpm --filter @quieroeso/db seed",
+    "db:seed": "pnpm --filter @quieroeso/domain seed",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "env:setup": "node scripts/setup-env.mjs",

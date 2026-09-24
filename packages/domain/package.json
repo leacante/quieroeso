@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --project unit",
-    "test:integration": "vitest run --project integration"
+    "test:integration": "vitest run --project integration",
+    "seed": "tsx src/seed.ts"
   },
   "dependencies": {
     "@quieroeso/config": "workspace:*",
@@ -22,6 +23,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "vitest": "5.0.1"
+    "vitest": "5.0.1",
+    "tsx": "4.23.15"
   }
 }

@@ -1,7 +1,12 @@
 import type { PublicListView } from "@quieroeso/domain";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { buildItemListJsonLd, jsonLdScript, listDescription, toPublicListJson } from "./public-metadata";
+import {
+  buildItemListJsonLd,
+  jsonLdScript,
+  listDescription,
+  toPublicListJson,
+} from "./public-metadata";
 
 const list: PublicListView = {
   id: "clist_internal_123",
@@ -73,7 +78,13 @@ const jsonLdSchema = z.object({
   ),
 });
 
-const PERSONAL_OR_INTERNAL = [/clist_internal_123/, /item_\d/, /ownerId/, /@example\.com/, /Ana Pérez/];
+const PERSONAL_OR_INTERNAL = [
+  /clist_internal_123/,
+  /item_\d/,
+  /ownerId/,
+  /@example\.com/,
+  /Ana Pérez/,
+];
 
 describe("JSON-LD ItemList", () => {
   const jsonLd = buildItemListJsonLd(list, "https://quieroeso.app/l/cumple-de-ana-abc123");
@@ -113,7 +124,11 @@ describe("public JSON", () => {
 
 describe("listDescription", () => {
   it("falls back to an item count and stays short", () => {
-    expect(listDescription(list)).toBe("Lista de deseos con 2 productos. Mirala y regalá algo en QuieroEso.");
-    expect(listDescription({ ...list, description: "x".repeat(400) }).length).toBeLessThanOrEqual(180);
+    expect(listDescription(list)).toBe(
+      "Lista de deseos con 2 productos. Mirala y regalá algo en QuieroEso.",
+    );
+    expect(listDescription({ ...list, description: "x".repeat(400) }).length).toBeLessThanOrEqual(
+      180,
+    );
   });
 });

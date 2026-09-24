@@ -7,7 +7,11 @@ import { createJobRuntime, runJob } from "./runtime";
 
 const runtime = createJobRuntime("cleanup");
 
-await runJob(runtime.logger, () => runtime.db.$disconnect(), async () => ({
-  purged: await purgeExpiredSecurityRecords(runtime.db),
-  webhooks: await processPendingWebhookEvents(runtime.paymentEvents),
-}));
+await runJob(
+  runtime.logger,
+  () => runtime.db.$disconnect(),
+  async () => ({
+    purged: await purgeExpiredSecurityRecords(runtime.db),
+    webhooks: await processPendingWebhookEvents(runtime.paymentEvents),
+  }),
+);

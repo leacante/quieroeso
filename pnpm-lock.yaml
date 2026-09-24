@@ -77,6 +77,9 @@ importers:
         specifier: 4.23.15
         version: 4.23.15
     devDependencies:
+      '@quieroeso/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
       vitest:
         specifier: 5.0.1
         version: 5.0.1(@types/node@24.13.6)(vite@8.3.1(@types/node@24.13.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
@@ -195,6 +198,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
       vitest:
         specifier: 5.0.1
         version: 5.0.1(@types/node@24.13.6)(vite@8.3.1(@types/node@24.13.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))

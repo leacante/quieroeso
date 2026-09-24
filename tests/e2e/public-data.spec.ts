@@ -2,11 +2,17 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { signInAsNewUser } from "./support/helpers";
 
-test("public data exposes only PUBLIC lists and is accessible", async ({ page, browser, baseURL }) => {
+test("public data exposes only PUBLIC lists and is accessible", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
   await signInAsNewUser(page);
   const headers = { Origin: new URL(baseURL!).origin };
   const make = async (title: string, visibility: "PUBLIC" | "UNLISTED") => {
-    const { list } = await (await page.request.post("/api/lists", { data: { title }, headers })).json();
+    const { list } = await (
+      await page.request.post("/api/lists", { data: { title }, headers })
+    ).json();
     await page.request.post(`/api/lists/${list.id}/items/import`, {
       data: { url: "https://meli.la/cafetera" },
       headers,
@@ -39,7 +45,11 @@ test("public data exposes only PUBLIC lists and is accessible", async ({ page, b
   expect(json).toMatchObject({ slug: pub.slug, title: "Lista abierta" });
   expect(JSON.stringify(json)).not.toMatch(/ownerId|@example\.com|shareToken/);
   const etag = api.headers()["etag"]!;
-  expect((await request.get(`/api/public/lists/${pub.slug}`, { headers: { "If-None-Match": etag } })).status()).toBe(304);
+  expect(
+    (
+      await request.get(`/api/public/lists/${pub.slug}`, { headers: { "If-None-Match": etag } })
+    ).status(),
+  ).toBe(304);
   expect((await request.get(`/api/public/lists/${secret.slug}`)).status()).toBe(404);
 
   const og = await request.get(`/l/${pub.slug}/opengraph-image`);
@@ -52,14 +62,21 @@ test("public data exposes only PUBLIC lists and is accessible", async ({ page, b
 
   const visitor = await anonymous.newPage();
   await visitor.goto(`/l/${pub.slug}`);
-  const jsonLd = JSON.parse((await visitor.locator('script[type="application/ld+json"]').textContent())!);
+  const jsonLd = JSON.parse(
+    (await visitor.locator('script[type="application/ld+json"]').textContent())!,
+  );
   expect(jsonLd["@type"]).toBe("ItemList");
   expect(jsonLd.itemListElement[0].item["@type"]).toBe("Product");
-  await expect(visitor.locator('meta[property="og:image"]')).toHaveAttribute("content", /opengraph-image/);
+  await expect(visitor.locator('meta[property="og:image"]')).toHaveAttribute(
+    "content",
+    /opengraph-image/,
+  );
 
   for (const path of ["/", "/login", `/l/${pub.slug}`, secret.shareUrl!]) {
     await visitor.goto(path);
-    const results = await new AxeBuilder({ page: visitor }).withTags(["wcag2a", "wcag2aa"]).analyze();
+    const results = await new AxeBuilder({ page: visitor })
+      .withTags(["wcag2a", "wcag2aa"])
+      .analyze();
     expect(results.violations.map((violation) => `${path}: ${violation.id}`)).toEqual([]);
   }
 

@@ -5,11 +5,11 @@ No se usan `railway.json` ni `railway.toml`.
 
 ## Servicios
 
-| Servicio | Imagen | Arranque | Salud / horario |
-|---|---|---|---|
-| `postgres` | Plugin PostgreSQL de Railway | — | Red privada; `DATABASE_URL` referenciada |
-| `web` | `apps/web/Dockerfile` (Next.js standalone) | `node apps/web/server.js` | Pre-deploy `migrate`; healthcheck `/api/health` (300 s); reinicio `ON_FAILURE` (5) |
-| `jobs-refresh-products` | `apps/jobs/Dockerfile` | `tsx src/refresh-products.ts` | Cron `17 */6 * * *`; reinicio `NEVER` |
+| Servicio                | Imagen                                     | Arranque                      | Salud / horario                                                                    |
+| ----------------------- | ------------------------------------------ | ----------------------------- | ---------------------------------------------------------------------------------- |
+| `postgres`              | Plugin PostgreSQL de Railway               | —                             | Red privada; `DATABASE_URL` referenciada                                           |
+| `web`                   | `apps/web/Dockerfile` (Next.js standalone) | `node apps/web/server.js`     | Pre-deploy `migrate`; healthcheck `/api/health` (300 s); reinicio `ON_FAILURE` (5) |
+| `jobs-refresh-products` | `apps/jobs/Dockerfile`                     | `tsx src/refresh-products.ts` | Cron `17 */6 * * *`; reinicio `NEVER`                                              |
 
 Región única `us-east4` para los tres recursos (verificar el identificador exacto con
 `railway config plan`; Railway puede exponerlo con sufijo de zona).
@@ -34,21 +34,21 @@ Región única `us-east4` para los tres recursos (verificar el identificador exa
    `railway config apply`.
 5. Cargar los secretos en Railway (quedan con `preserve()` en el IaC):
 
-   | Variable | Valor |
-   |---|---|
-   | `APP_URL`, `BETTER_AUTH_URL` | URL pública del ambiente (https) |
-   | `BETTER_AUTH_SECRET` | ≥ 32 caracteres aleatorios |
-   | `GOOGLE_CLIENT_ID/SECRET` | Cliente OAuth web de Google del ambiente |
-   | `MELI_CLIENT_ID/SECRET` | Aplicación de Mercado Libre |
-   | `MP_CLIENT_ID/SECRET` | Aplicación de Mercado Pago (Marketplace) |
-   | `MP_WEBHOOK_SECRET` | Clave secreta de webhooks de la aplicación de Mercado Pago |
-   | `TOKEN_ENCRYPTION_KEY_V1` | `openssl rand -base64 32` |
-   | `IP_HASH_SECRET` | ≥ 32 caracteres aleatorios |
+   | Variable                     | Valor                                                      |
+   | ---------------------------- | ---------------------------------------------------------- |
+   | `APP_URL`, `BETTER_AUTH_URL` | URL pública del ambiente (https)                           |
+   | `BETTER_AUTH_SECRET`         | ≥ 32 caracteres aleatorios                                 |
+   | `GOOGLE_CLIENT_ID/SECRET`    | Cliente OAuth web de Google del ambiente                   |
+   | `MELI_CLIENT_ID/SECRET`      | Aplicación de Mercado Libre                                |
+   | `MP_CLIENT_ID/SECRET`        | Aplicación de Mercado Pago (Marketplace)                   |
+   | `MP_WEBHOOK_SECRET`          | Clave secreta de webhooks de la aplicación de Mercado Pago |
+   | `TOKEN_ENCRYPTION_KEY_V1`    | `openssl rand -base64 32`                                  |
+   | `IP_HASH_SECRET`             | ≥ 32 caracteres aleatorios                                 |
 
 6. Configurar en cada proveedor (credenciales **separadas** por ambiente):
    - Google: URI de redirección `${APP_URL}/api/auth/callback/google`.
    - Mercado Pago: URL de redirección OAuth `${APP_URL}/api/integrations/mercadopago/callback`
-     y webhook `${APP_URL}/api/webhooks/mercadopago` (evento *Pagos*).
+     y webhook `${APP_URL}/api/webhooks/mercadopago` (evento _Pagos_).
    - Mercado Libre: aplicación separada de la de Mercado Pago (requisito desde 30/08/2026).
 7. Desplegar y correr el smoke test: `node scripts/smoke-production.mjs ${APP_URL}`.
 

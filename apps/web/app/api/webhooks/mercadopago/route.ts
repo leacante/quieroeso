@@ -42,7 +42,8 @@ export async function POST(request: Request): Promise<Response> {
     return new Response(null, { status });
   }
   const body = parseBody(text);
-  const dataId = url.searchParams.get("data.id") ?? (body.data?.id !== undefined ? String(body.data.id) : null);
+  const dataId =
+    url.searchParams.get("data.id") ?? (body.data?.id !== undefined ? String(body.data.id) : null);
   const topic = url.searchParams.get("type") ?? url.searchParams.get("topic") ?? body.type ?? null;
   const requestId = request.headers.get("x-request-id");
 
@@ -53,7 +54,10 @@ export async function POST(request: Request): Promise<Response> {
     secret: getMercadoPagoConfig().webhookSecret,
   });
   if (!valid) {
-    logger.warn({ topic, hasRequestId: Boolean(requestId) }, "rejected webhook with invalid signature");
+    logger.warn(
+      { topic, hasRequestId: Boolean(requestId) },
+      "rejected webhook with invalid signature",
+    );
     return new Response(null, { status: 401 });
   }
 

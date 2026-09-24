@@ -29,7 +29,11 @@ export const POST = handle(async (request) => {
     {
       ...getContributionDeps(),
       enforceCheckoutLimit: (listId) =>
-        enforceRateLimit(getPrisma(), rateLimitKeys.checkout(ipHash, listId), RATE_LIMITS.checkoutPerIpAndList),
+        enforceRateLimit(
+          getPrisma(),
+          rateLimitKeys.checkout(ipHash, listId),
+          RATE_LIMITS.checkoutPerIpAndList,
+        ),
     },
     input,
     idempotencyKey.toLowerCase(),

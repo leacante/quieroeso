@@ -123,6 +123,7 @@ export function getPaymentEventDeps(): PaymentEventDeps {
       const { accessToken } = await getActiveAccessToken(connection, owner.userId);
       return { accessToken };
     },
-    getPayment: (accessToken, paymentId) => getPayment({ apiBaseUrl: mp.apiBaseUrl }, accessToken, paymentId),
+    getPayment: (accessToken, paymentId) =>
+      getPayment({ apiBaseUrl: mp.apiBaseUrl }, accessToken, paymentId),
   };
 }

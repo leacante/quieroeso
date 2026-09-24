@@ -33,9 +33,21 @@ export default async function ContributionsPage() {
 
       <dl className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: "Aportes acreditados", value: String(totals.approvedCount), testId: "total-count" },
-          { label: "Total recibido", value: formatMoney(totals.approvedMinor), testId: "total-amount" },
-          { label: "Comisiones de QuieroEso", value: formatMoney(totals.platformFeesMinor), testId: "total-fees" },
+          {
+            label: "Aportes acreditados",
+            value: String(totals.approvedCount),
+            testId: "total-count",
+          },
+          {
+            label: "Total recibido",
+            value: formatMoney(totals.approvedMinor),
+            testId: "total-amount",
+          },
+          {
+            label: "Comisiones de QuieroEso",
+            value: formatMoney(totals.platformFeesMinor),
+            testId: "total-fees",
+          },
         ].map((stat) => (
           <Card key={stat.label} className="flex flex-col gap-1 p-4">
             <dt className="text-sm text-muted-foreground">{stat.label}</dt>
@@ -46,8 +58,8 @@ export default async function ContributionsPage() {
         ))}
       </dl>
       <p className="text-sm text-muted-foreground">
-        Los montos son brutos: Mercado Pago descuenta sus cargos y la comisión de plataforma al acreditar.
-        Los reembolsos se gestionan desde tu cuenta de Mercado Pago.
+        Los montos son brutos: Mercado Pago descuenta sus cargos y la comisión de plataforma al
+        acreditar. Los reembolsos se gestionan desde tu cuenta de Mercado Pago.
       </p>
 
       {contributions.length === 0 ? (
@@ -60,18 +72,36 @@ export default async function ContributionsPage() {
             <caption className="sr-only">Historial de aportes</caption>
             <thead className="border-b-2 border-foreground bg-muted">
               <tr>
-                <th scope="col" className="p-3">Fecha</th>
-                <th scope="col" className="p-3">Producto</th>
-                <th scope="col" className="p-3">De</th>
-                <th scope="col" className="p-3 text-right">Monto</th>
-                <th scope="col" className="p-3 text-right">Comisión</th>
-                <th scope="col" className="p-3">Estado</th>
+                <th scope="col" className="p-3">
+                  Fecha
+                </th>
+                <th scope="col" className="p-3">
+                  Producto
+                </th>
+                <th scope="col" className="p-3">
+                  De
+                </th>
+                <th scope="col" className="p-3 text-right">
+                  Monto
+                </th>
+                <th scope="col" className="p-3 text-right">
+                  Comisión
+                </th>
+                <th scope="col" className="p-3">
+                  Estado
+                </th>
               </tr>
             </thead>
             <tbody>
               {contributions.map((row) => (
-                <tr key={row.id} className="border-b border-border align-top" data-testid="contribution-row">
-                  <td className="p-3 whitespace-nowrap">{formatDate(row.approvedAt ?? row.createdAt)}</td>
+                <tr
+                  key={row.id}
+                  className="border-b border-border align-top"
+                  data-testid="contribution-row"
+                >
+                  <td className="p-3 whitespace-nowrap">
+                    {formatDate(row.approvedAt ?? row.createdAt)}
+                  </td>
                   <td className="p-3">
                     <span className="font-semibold">{row.listItem.title}</span>
                     <br />
@@ -85,10 +115,14 @@ export default async function ContributionsPage() {
                   <td className="p-3">
                     {row.contributorName ?? <span className="text-muted-foreground">Anónimo</span>}
                     {row.contributorMessage ? (
-                      <p className="mt-1 max-w-xs text-muted-foreground">“{row.contributorMessage}”</p>
+                      <p className="mt-1 max-w-xs text-muted-foreground">
+                        “{row.contributorMessage}”
+                      </p>
                     ) : null}
                   </td>
-                  <td className="p-3 text-right font-semibold whitespace-nowrap">{formatMoney(row.amountMinor)}</td>
+                  <td className="p-3 text-right font-semibold whitespace-nowrap">
+                    {formatMoney(row.amountMinor)}
+                  </td>
                   <td className="p-3 text-right whitespace-nowrap text-muted-foreground">
                     {formatMoney(row.platformFeeAmountMinor)} ({row.platformFeeRateBps / 100}%)
                   </td>

@@ -58,52 +58,107 @@ export async function renderListOgImage(list: PublicListView | null): Promise<Im
   const images = await Promise.all(items.map((item) => toDataUrl(item.imageUrl)));
 
   return new ImageResponse(
-    (
-      <div style={{ display: "flex", width: "100%", height: "100%", background: "#fff1f2", padding: 48, gap: 40 }}>
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 34, fontWeight: 700, color: "#0f172a" }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: "#dc2626", border: "4px solid #0f172a" }} />
-            QuieroEso
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ fontSize: 30, color: "#dc2626", fontWeight: 700 }}>Lista de deseos</div>
-            <div style={{ fontSize: list && list.title.length > 40 ? 58 : 76, fontWeight: 800, color: "#0f172a", lineHeight: 1.05 }}>
-              {list?.title ?? "Armá tu lista de deseos"}
-            </div>
-          </div>
-          <div style={{ fontSize: 28, color: "#475569" }}>
-            {list ? `${list.items.length} ${list.items.length === 1 ? "producto" : "productos"} · Mirala y regalá algo` : "Compartila y recibí aportes"}
+    <div
+      style={{
+        display: "flex",
+        width: "100%",
+        height: "100%",
+        background: "#fff1f2",
+        padding: 48,
+        gap: 40,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          flex: 1,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            fontSize: 34,
+            fontWeight: 700,
+            color: "#0f172a",
+          }}
+        >
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              background: "#dc2626",
+              border: "4px solid #0f172a",
+            }}
+          />
+          QuieroEso
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ fontSize: 30, color: "#dc2626", fontWeight: 700 }}>Lista de deseos</div>
+          <div
+            style={{
+              fontSize: list && list.title.length > 40 ? 58 : 76,
+              fontWeight: 800,
+              color: "#0f172a",
+              lineHeight: 1.05,
+            }}
+          >
+            {list?.title ?? "Armá tu lista de deseos"}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, width: 420 }}>
-          {items.map((item, index) => (
-            <div
-              key={item.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                background: "#ffffff",
-                border: "4px solid #0f172a",
-                borderRadius: 20,
-                padding: 12,
-                boxShadow: "6px 6px 0 #0f172a",
-              }}
-            >
-              {images[index] ? (
-                // eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not the browser
-                <img src={images[index]!} width={120} height={120} style={{ objectFit: "contain", borderRadius: 12 }} alt="" />
-              ) : (
-                <div style={{ width: 120, height: 120, borderRadius: 12, background: ["#d97706", "#ec4899", "#15803d"][index] }} />
-              )}
-              <div style={{ display: "flex", fontSize: 26, fontWeight: 700, color: "#0f172a", flex: 1 }}>
-                {item.title.length > 48 ? `${item.title.slice(0, 47)}…` : item.title}
-              </div>
-            </div>
-          ))}
+        <div style={{ fontSize: 28, color: "#475569" }}>
+          {list
+            ? `${list.items.length} ${list.items.length === 1 ? "producto" : "productos"} · Mirala y regalá algo`
+            : "Compartila y recibí aportes"}
         </div>
       </div>
-    ),
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, width: 420 }}>
+        {items.map((item, index) => (
+          <div
+            key={item.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              background: "#ffffff",
+              border: "4px solid #0f172a",
+              borderRadius: 20,
+              padding: 12,
+              boxShadow: "6px 6px 0 #0f172a",
+            }}
+          >
+            {images[index] ? (
+              // eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not the browser
+              <img
+                src={images[index]!}
+                width={120}
+                height={120}
+                style={{ objectFit: "contain", borderRadius: 12 }}
+                alt=""
+              />
+            ) : (
+              <div
+                style={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: 12,
+                  background: ["#d97706", "#ec4899", "#15803d"][index],
+                }}
+              />
+            )}
+            <div
+              style={{ display: "flex", fontSize: 26, fontWeight: 700, color: "#0f172a", flex: 1 }}
+            >
+              {item.title.length > 48 ? `${item.title.slice(0, 47)}…` : item.title}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>,
     { ...OG_SIZE, headers: { "Cache-Control": "public, max-age=600" } },
   );
 }

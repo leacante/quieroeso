@@ -21,7 +21,11 @@ export function parseSignatureHeader(header: string | null): ParsedSignature | n
  * Manifest defined by Mercado Pago: `id:{data.id};request-id:{x-request-id};ts:{ts};`.
  * Alphanumeric ids are lowercased; absent parts are omitted.
  */
-export function buildSignatureManifest(params: { dataId: string | null; requestId: string | null; ts: string }): string {
+export function buildSignatureManifest(params: {
+  dataId: string | null;
+  requestId: string | null;
+  ts: string;
+}): string {
   let manifest = "";
   if (params.dataId) manifest += `id:${params.dataId.toLowerCase()};`;
   if (params.requestId) manifest += `request-id:${params.requestId};`;
@@ -43,7 +47,13 @@ export function verifyWebhookSignature(params: {
   const signature = parseSignatureHeader(params.signatureHeader);
   if (!signature || !params.requestId || !params.dataId) return false;
   const expected = createHmac("sha256", params.secret)
-    .update(buildSignatureManifest({ dataId: params.dataId, requestId: params.requestId, ts: signature.ts }))
+    .update(
+      buildSignatureManifest({
+        dataId: params.dataId,
+        requestId: params.requestId,
+        ts: signature.ts,
+      }),
+    )
     .digest("hex");
   return safeEqual(expected, signature.v1);
 }

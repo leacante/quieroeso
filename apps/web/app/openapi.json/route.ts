@@ -26,10 +26,15 @@ export function GET(): Response {
             "200": {
               description: "Lista pública",
               headers: { ETag: { schema: { type: "string" } } },
-              content: { "application/json": { schema: { $ref: "#/components/schemas/PublicList" } } },
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/PublicList" } },
+              },
             },
             "304": { description: "Sin cambios" },
-            "404": { description: "No encontrada", content: { "application/problem+json": { schema: problem } } },
+            "404": {
+              description: "No encontrada",
+              content: { "application/problem+json": { schema: problem } },
+            },
           },
         },
       },
@@ -47,10 +52,19 @@ export function GET(): Response {
           summary: "Crear un aporte (Checkout Pro)",
           description:
             "Crea un aporte para un producto de una lista compartida y devuelve la URL de Checkout Pro de Mercado Pago. Requiere encabezado Idempotency-Key.",
-          parameters: [{ name: "Idempotency-Key", in: "header", required: true, schema: { type: "string", format: "uuid" } }],
+          parameters: [
+            {
+              name: "Idempotency-Key",
+              in: "header",
+              required: true,
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
           requestBody: {
             required: true,
-            content: { "application/json": { schema: { $ref: "#/components/schemas/CreateContribution" } } },
+            content: {
+              "application/json": { schema: { $ref: "#/components/schemas/CreateContribution" } },
+            },
           },
           responses: {
             "201": {
@@ -59,14 +73,26 @@ export function GET(): Response {
                 "application/json": {
                   schema: {
                     type: "object",
-                    properties: { contributionId: { type: "string" }, checkoutUrl: { type: "string", format: "uri" } },
+                    properties: {
+                      contributionId: { type: "string" },
+                      checkoutUrl: { type: "string", format: "uri" },
+                    },
                   },
                 },
               },
             },
-            "409": { description: "El producto no acepta aportes", content: { "application/problem+json": { schema: problem } } },
-            "422": { description: "Datos inválidos", content: { "application/problem+json": { schema: problem } } },
-            "429": { description: "Demasiados intentos", content: { "application/problem+json": { schema: problem } } },
+            "409": {
+              description: "El producto no acepta aportes",
+              content: { "application/problem+json": { schema: problem } },
+            },
+            "422": {
+              description: "Datos inválidos",
+              content: { "application/problem+json": { schema: problem } },
+            },
+            "429": {
+              description: "Demasiados intentos",
+              content: { "application/problem+json": { schema: problem } },
+            },
           },
         },
       },
@@ -81,7 +107,10 @@ export function GET(): Response {
             { name: "data.id", in: "query", required: true, schema: { type: "string" } },
             { name: "type", in: "query", required: false, schema: { type: "string" } },
           ],
-          responses: { "200": { description: "Recibido" }, "401": { description: "Firma inválida" } },
+          responses: {
+            "200": { description: "Recibido" },
+            "401": { description: "Firma inválida" },
+          },
         },
       },
       "/api/integrations/mercadopago/callback": {
@@ -109,7 +138,10 @@ export function GET(): Response {
         },
         Money: {
           type: "object",
-          properties: { amount: { type: "string", examples: ["1234.56"] }, currency: { const: "ARS" } },
+          properties: {
+            amount: { type: "string", examples: ["1234.56"] },
+            currency: { const: "ARS" },
+          },
         },
         PublicList: {
           type: "object",
@@ -136,7 +168,11 @@ export function GET(): Response {
                   price: { oneOf: [{ $ref: "#/components/schemas/Money" }, { type: "null" }] },
                   funding: {
                     type: ["object", "null"],
-                    properties: { target: { type: "string" }, funded: { type: "string" }, currency: { const: "ARS" } },
+                    properties: {
+                      target: { type: "string" },
+                      funded: { type: "string" },
+                      currency: { const: "ARS" },
+                    },
                   },
                 },
               },

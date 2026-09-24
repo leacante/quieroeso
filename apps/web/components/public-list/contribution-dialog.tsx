@@ -8,13 +8,14 @@ import { useId, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiRequest } from "@/lib/client/api";
 import { formatMoney, parseMoneyInput } from "@/lib/format";
 
-export type ContributionAccess = { type: "public"; slug: string } | { type: "shared"; token: string };
+export type ContributionAccess =
+  { type: "public"; slug: string } | { type: "shared"; token: string };
 
 function suggestions(minimum: bigint, remaining: bigint): bigint[] {
   const round = (value: bigint) => (value / 100_000n) * 100_000n; // whole $1.000 steps
   const values = [minimum, round(remaining / 4n), round(remaining / 2n), remaining];
-  return [...new Set(values.filter((value) => value >= minimum && value <= remaining))].sort((a, b) =>
-    a < b ? -1 : 1,
+  return [...new Set(values.filter((value) => value >= minimum && value <= remaining))].sort(
+    (a, b) => (a < b ? -1 : 1),
   );
 }
 
@@ -37,7 +38,8 @@ export function ContributionDialog({
   const titleId = useId();
   const idempotencyKey = useRef<string | null>(null);
   const remaining = BigInt(remainingMinor);
-  const minimum = BigInt(minContributionMinor) < remaining ? BigInt(minContributionMinor) : remaining;
+  const minimum =
+    BigInt(minContributionMinor) < remaining ? BigInt(minContributionMinor) : remaining;
   const [amountText, setAmountText] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +60,9 @@ export function ContributionDialog({
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     if (!amount || amount < minimum || amount > remaining) {
-      setFields({ amountMinor: `Ingresá un monto entre ${formatMoney(minimum)} y ${formatMoney(remaining)}.` });
+      setFields({
+        amountMinor: `Ingresá un monto entre ${formatMoney(minimum)} y ${formatMoney(remaining)}.`,
+      });
       return;
     }
     if (data.get("acceptTerms") !== "on") {
@@ -85,7 +89,11 @@ export function ContributionDialog({
       window.location.assign(result.checkoutUrl);
     } catch (caught) {
       setPending(false);
-      if (caught instanceof ApiError && Object.keys(caught.fields).length > 0 && caught.code !== "VALIDATION_FAILED") {
+      if (
+        caught instanceof ApiError &&
+        Object.keys(caught.fields).length > 0 &&
+        caught.code !== "VALIDATION_FAILED"
+      ) {
         setFields(caught.fields);
       } else {
         setError(caught instanceof ApiError ? caught.message : "No pudimos iniciar el pago.");
@@ -95,13 +103,17 @@ export function ContributionDialog({
 
   return (
     <>
-      <Button className="w-full" onClick={open} icon={<HandCoins className="size-5" aria-hidden="true" />}>
+      <Button
+        className="w-full"
+        onClick={open}
+        icon={<HandCoins className="size-5" aria-hidden="true" />}
+      >
         Aportar
       </Button>
       <dialog
         ref={dialogRef}
         aria-labelledby={titleId}
-        className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-2xl border-2 border-foreground bg-card p-0 text-card-foreground shadow-block backdrop:bg-foreground/60"
+        className="m-auto max-h-[calc(100dvh-2rem)] w-[min(32rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border-2 border-foreground bg-card p-0 text-card-foreground shadow-block backdrop:bg-foreground/60"
       >
         <form onSubmit={submit} className="flex flex-col gap-4 p-5" noValidate>
           <div className="flex items-start justify-between gap-3">
@@ -130,7 +142,9 @@ export function ContributionDialog({
                   onClick={() => setAmountText((Number(value) / 100).toString())}
                   className={cn(
                     "min-h-11 rounded-xl border-2 px-3 text-sm font-bold transition-colors duration-200",
-                    amount === value ? "border-foreground bg-accent-soft" : "border-border-strong hover:bg-muted",
+                    amount === value
+                      ? "border-foreground bg-accent-soft"
+                      : "border-border-strong hover:bg-muted",
                   )}
                 >
                   {formatMoney(value)}
@@ -159,9 +173,18 @@ export function ContributionDialog({
             optional
             autoComplete="name"
           />
-          <TextAreaField id={`message-${itemId}`} name="contributorMessage" label="Mensaje" maxLength={280} optional />
+          <TextAreaField
+            id={`message-${itemId}`}
+            name="contributorMessage"
+            label="Mensaje"
+            maxLength={280}
+            optional
+          />
 
-          <div className="rounded-xl border-2 border-border-strong bg-muted p-3 text-sm" aria-live="polite">
+          <div
+            className="rounded-xl border-2 border-border-strong bg-muted p-3 text-sm"
+            aria-live="polite"
+          >
             <p className="flex justify-between gap-2">
               <span>Tu aporte</span>
               <strong>{amount ? formatMoney(amount) : "—"}</strong>
@@ -171,8 +194,9 @@ export function ContributionDialog({
               <span>{fee !== null ? formatMoney(fee) : "—"}</span>
             </p>
             <p className="mt-2 text-muted-foreground">
-              La comisión se descuenta de lo que recibe quien armó la lista. Mercado Pago puede aplicar
-              sus propios cargos. El pago lo procesa Mercado Pago: QuieroEso no guarda datos de tu tarjeta.
+              La comisión se descuenta de lo que recibe quien armó la lista. Mercado Pago puede
+              aplicar sus propios cargos. El pago lo procesa Mercado Pago: QuieroEso no guarda datos
+              de tu tarjeta.
             </p>
           </div>
 
@@ -187,11 +211,19 @@ export function ContributionDialog({
               />
               <span>
                 Acepto los{" "}
-                <Link href="/terms" target="_blank" className="font-semibold underline underline-offset-2">
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="font-semibold underline underline-offset-2"
+                >
                   términos
                 </Link>{" "}
                 y la{" "}
-                <Link href="/privacy" target="_blank" className="font-semibold underline underline-offset-2">
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="font-semibold underline underline-offset-2"
+                >
                   política de privacidad
                 </Link>
                 .
@@ -206,7 +238,12 @@ export function ContributionDialog({
 
           {error ? <Alert tone="error">{error}</Alert> : null}
 
-          <Button type="submit" size="lg" loading={pending} icon={<ShieldCheck className="size-5" aria-hidden="true" />}>
+          <Button
+            type="submit"
+            size="lg"
+            loading={pending}
+            icon={<ShieldCheck className="size-5" aria-hidden="true" />}
+          >
             Ir a pagar con Mercado Pago
           </Button>
         </form>

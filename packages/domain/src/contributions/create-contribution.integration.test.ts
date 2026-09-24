@@ -16,7 +16,10 @@ const ctx = useTestDatabase();
 function deps(overrides: Partial<ContributionDeps> = {}): ContributionDeps {
   return {
     db: ctx.db,
-    getOwnerAccessToken: vi.fn(async () => ({ accessToken: "APP_USR-owner", mercadoPagoUserId: "1001" })),
+    getOwnerAccessToken: vi.fn(async () => ({
+      accessToken: "APP_USR-owner",
+      mercadoPagoUserId: "1001",
+    })),
     createPreference: vi.fn(async (_token: string, input: PreferenceInput) => ({
       id: `pref-${input.externalReference}`,
       initPoint: `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-${input.externalReference}`,
@@ -47,7 +50,10 @@ async function setup(options: { visibility?: "PUBLIC" | "UNLISTED"; perItem?: bo
   const list = await createList(ctx.db, owner.id, { title: "Casamiento" });
   const ref = { listId: list.id, ownerId: owner.id };
   const item = await insertItem(ctx.db, ref, itemData({ priceMinor: 150_000n }));
-  const published = await publishList(ctx.deps, { ...ref, visibility: options.visibility ?? "PUBLIC" });
+  const published = await publishList(ctx.deps, {
+    ...ref,
+    visibility: options.visibility ?? "PUBLIC",
+  });
   if (options.perItem !== false) await updateList(ctx.db, ref, { fundingMode: "PER_ITEM" });
   const access =
     options.visibility === "UNLISTED"
@@ -56,8 +62,18 @@ async function setup(options: { visibility?: "PUBLIC" | "UNLISTED"; perItem?: bo
   return { owner, list, ref, item, access };
 }
 
-function input(listItemId: string, access: CreateContributionInput["access"], amountMinor = 100_000n) {
-  return { listItemId, amountMinor, access, acceptTerms: true as const, contributorName: "Tía Marta" };
+function input(
+  listItemId: string,
+  access: CreateContributionInput["access"],
+  amountMinor = 100_000n,
+) {
+  return {
+    listItemId,
+    amountMinor,
+    access,
+    acceptTerms: true as const,
+    contributorName: "Tía Marta",
+  };
 }
 
 async function codeOf(promise: Promise<unknown>) {
@@ -72,7 +88,9 @@ describe("createContribution", () => {
     const d = deps();
     const result = await createContribution(d, input(item.id, access), randomUUID());
 
-    const row = await ctx.db.contribution.findUniqueOrThrow({ where: { id: result.contributionId } });
+    const row = await ctx.db.contribution.findUniqueOrThrow({
+      where: { id: result.contributionId },
+    });
     expect(row).toMatchObject({
       status: "CHECKOUT_CREATED",
       amountMinor: 100_000n,
@@ -103,7 +121,9 @@ describe("createContribution", () => {
       input(item.id, { type: "public", slug: second.slug }, 123_456n),
       randomUUID(),
     );
-    const row = await ctx.db.contribution.findUniqueOrThrow({ where: { id: result.contributionId } });
+    const row = await ctx.db.contribution.findUniqueOrThrow({
+      where: { id: result.contributionId },
+    });
     expect(row).toMatchObject({ platformFeeRateBps: 100, platformFeeAmountMinor: 1_235n });
     expect(vi.mocked(d.createPreference).mock.calls[0]![1].marketplaceFee).toBe(12.35);
   });
@@ -121,7 +141,9 @@ describe("createContribution", () => {
       first.contributionId,
       first.contributionId,
     ]);
-    expect(await codeOf(createContribution(d, input(item.id, access, 120_000n), key))).toBe("CONFLICT");
+    expect(await codeOf(createContribution(d, input(item.id, access, 120_000n), key))).toBe(
+      "CONFLICT",
+    );
   });
 
   it("enforces the minimum and the remaining balance, including recent reservations", async () => {
@@ -130,14 +152,14 @@ describe("createContribution", () => {
     expect(await codeOf(createContribution(d, input(item.id, access, 99_999n), randomUUID()))).toBe(
       "VALIDATION_FAILED",
     );
-    expect(await codeOf(createContribution(d, input(item.id, access, 150_001n), randomUUID()))).toBe(
-      "VALIDATION_FAILED",
-    );
+    expect(
+      await codeOf(createContribution(d, input(item.id, access, 150_001n), randomUUID())),
+    ).toBe("VALIDATION_FAILED");
     // $1.000 reserved leaves $500: below the minimum, but completing the target is allowed.
     await createContribution(d, input(item.id, access, 100_000n), randomUUID());
-    expect(await codeOf(createContribution(d, input(item.id, access, 100_000n), randomUUID()))).toBe(
-      "VALIDATION_FAILED",
-    );
+    expect(
+      await codeOf(createContribution(d, input(item.id, access, 100_000n), randomUUID())),
+    ).toBe("VALIDATION_FAILED");
     await createContribution(d, input(item.id, access, 50_000n), randomUUID());
     expect(await codeOf(createContribution(d, input(item.id, access, 50_000n), randomUUID()))).toBe(
       "INVALID_STATE",
@@ -148,26 +170,37 @@ describe("createContribution", () => {
     const { item, access } = await setup();
     await createContribution(deps(), input(item.id, access, 150_000n), randomUUID());
     const later = deps({ now: () => new Date(Date.now() + 31 * 60_000) });
-    await expect(createContribution(later, input(item.id, access, 150_000n), randomUUID())).resolves.toBeTruthy();
+    await expect(
+      createContribution(later, input(item.id, access, 150_000n), randomUUID()),
+    ).resolves.toBeTruthy();
   });
 
   it("rejects lists that are not shared, not per-item, archived items or no Mercado Pago", async () => {
     const privateCase = await setup();
     await updateList(ctx.db, privateCase.ref, { visibility: "PRIVATE" });
-    expect(await codeOf(createContribution(deps(), input(privateCase.item.id, privateCase.access), randomUUID()))).toBe(
-      "NOT_FOUND",
-    );
+    expect(
+      await codeOf(
+        createContribution(deps(), input(privateCase.item.id, privateCase.access), randomUUID()),
+      ),
+    ).toBe("NOT_FOUND");
 
     const wishlist = await setup({ perItem: false });
-    expect(await codeOf(createContribution(deps(), input(wishlist.item.id, wishlist.access), randomUUID()))).toBe(
-      "INVALID_STATE",
-    );
+    expect(
+      await codeOf(
+        createContribution(deps(), input(wishlist.item.id, wishlist.access), randomUUID()),
+      ),
+    ).toBe("INVALID_STATE");
 
     const archived = await setup();
-    await ctx.db.listItem.update({ where: { id: archived.item.id }, data: { archivedAt: new Date() } });
-    expect(await codeOf(createContribution(deps(), input(archived.item.id, archived.access), randomUUID()))).toBe(
-      "INVALID_STATE",
-    );
+    await ctx.db.listItem.update({
+      where: { id: archived.item.id },
+      data: { archivedAt: new Date() },
+    });
+    expect(
+      await codeOf(
+        createContribution(deps(), input(archived.item.id, archived.access), randomUUID()),
+      ),
+    ).toBe("INVALID_STATE");
 
     const disconnected = await setup();
     const noMp = deps({
@@ -175,19 +208,35 @@ describe("createContribution", () => {
         throw new DomainError("MERCADOPAGO_NOT_CONNECTED", "no");
       }),
     });
-    expect(await codeOf(createContribution(noMp, input(disconnected.item.id, disconnected.access), randomUUID()))).toBe(
-      "MERCADOPAGO_NOT_CONNECTED",
-    );
+    expect(
+      await codeOf(
+        createContribution(noMp, input(disconnected.item.id, disconnected.access), randomUUID()),
+      ),
+    ).toBe("MERCADOPAGO_NOT_CONNECTED");
   });
 
   it("requires the secret token for unlisted lists", async () => {
     const { item, list, access } = await setup({ visibility: "UNLISTED" });
-    await expect(createContribution(deps(), input(item.id, access), randomUUID())).resolves.toBeTruthy();
+    await expect(
+      createContribution(deps(), input(item.id, access), randomUUID()),
+    ).resolves.toBeTruthy();
     expect(
-      await codeOf(createContribution(deps(), input(item.id, { type: "public", slug: list.slug }), randomUUID())),
+      await codeOf(
+        createContribution(
+          deps(),
+          input(item.id, { type: "public", slug: list.slug }),
+          randomUUID(),
+        ),
+      ),
     ).toBe("NOT_FOUND");
     expect(
-      await codeOf(createContribution(deps(), input(item.id, { type: "shared", token: "x".repeat(43) }), randomUUID())),
+      await codeOf(
+        createContribution(
+          deps(),
+          input(item.id, { type: "shared", token: "x".repeat(43) }),
+          randomUUID(),
+        ),
+      ),
     ).toBe("NOT_FOUND");
   });
 
@@ -198,13 +247,19 @@ describe("createContribution", () => {
         throw new MercadoPagoApiError("BAD_REQUEST", 400);
       }),
     });
-    expect(await codeOf(createContribution(failing, input(item.id, access), randomUUID()))).toBe("UPSTREAM_UNAVAILABLE");
+    expect(await codeOf(createContribution(failing, input(item.id, access), randomUUID()))).toBe(
+      "UPSTREAM_UNAVAILABLE",
+    );
     expect(await ctx.db.contribution.findFirstOrThrow()).toMatchObject({ status: "CANCELLED" });
   });
 
   it("refuses checkout URLs outside the allowed hosts", async () => {
     const { item, access } = await setup();
-    const evil = deps({ createPreference: vi.fn(async () => ({ id: "p", initPoint: "https://evil.example/pay" })) });
-    expect(await codeOf(createContribution(evil, input(item.id, access), randomUUID()))).toBe("UPSTREAM_UNAVAILABLE");
+    const evil = deps({
+      createPreference: vi.fn(async () => ({ id: "p", initPoint: "https://evil.example/pay" })),
+    });
+    expect(await codeOf(createContribution(evil, input(item.id, access), randomUUID()))).toBe(
+      "UPSTREAM_UNAVAILABLE",
+    );
   });
 });

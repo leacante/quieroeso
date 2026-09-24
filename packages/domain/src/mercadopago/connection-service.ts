@@ -16,7 +16,11 @@ export const REFRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
 const PROVIDER = "mercadopago";
 
 export type MercadoPagoOAuthGateway = {
-  exchangeCode(params: { code: string; redirectUri: string; codeVerifier: string }): Promise<MercadoPagoTokens>;
+  exchangeCode(params: {
+    code: string;
+    redirectUri: string;
+    codeVerifier: string;
+  }): Promise<MercadoPagoTokens>;
   refresh(refreshToken: string): Promise<MercadoPagoTokens>;
 };
 
@@ -97,7 +101,10 @@ export async function completeMercadoPagoAuthorization(
     });
   } catch (error) {
     getLogger().warn({ err: error }, "mercadopago code exchange failed");
-    throw new DomainError("UPSTREAM_UNAVAILABLE", "No pudimos conectar con Mercado Pago. Probá de nuevo.");
+    throw new DomainError(
+      "UPSTREAM_UNAVAILABLE",
+      "No pudimos conectar con Mercado Pago. Probá de nuevo.",
+    );
   }
 
   const encrypted = {
@@ -113,32 +120,38 @@ export async function completeMercadoPagoAuthorization(
 
   const inUse = () =>
     new DomainError("CONFLICT", "Esa cuenta de Mercado Pago ya está conectada a otro usuario.");
-  await deps.db.$transaction(async (tx) => {
-    const activeElsewhere = await tx.mercadoPagoConnection.findFirst({
-      where: {
-        mercadoPagoUserId: tokens.mercadoPagoUserId,
-        status: "ACTIVE",
-        userId: { not: params.userId },
-      },
-      select: { id: true },
+  await deps.db
+    .$transaction(async (tx) => {
+      const activeElsewhere = await tx.mercadoPagoConnection.findFirst({
+        where: {
+          mercadoPagoUserId: tokens.mercadoPagoUserId,
+          status: "ACTIVE",
+          userId: { not: params.userId },
+        },
+        select: { id: true },
+      });
+      if (activeElsewhere) throw inUse();
+      await tx.mercadoPagoConnection.upsert({
+        where: { userId: params.userId },
+        create: {
+          userId: params.userId,
+          mercadoPagoUserId: tokens.mercadoPagoUserId,
+          ...encrypted,
+        },
+        update: { mercadoPagoUserId: tokens.mercadoPagoUserId, ...encrypted },
+      });
+      await writeAuditEvent(tx, {
+        actorUserId: params.userId,
+        action: "mercadopago.connected",
+        targetType: "mercadopago_connection",
+        targetId: params.userId,
+        metadata: { liveMode: tokens.liveMode },
+      });
+    })
+    .catch((error: unknown) => {
+      // Partial unique index: one ACTIVE connection per Mercado Pago account.
+      throw isUniqueViolation(error) ? inUse() : error;
     });
-    if (activeElsewhere) throw inUse();
-    await tx.mercadoPagoConnection.upsert({
-      where: { userId: params.userId },
-      create: { userId: params.userId, mercadoPagoUserId: tokens.mercadoPagoUserId, ...encrypted },
-      update: { mercadoPagoUserId: tokens.mercadoPagoUserId, ...encrypted },
-    });
-    await writeAuditEvent(tx, {
-      actorUserId: params.userId,
-      action: "mercadopago.connected",
-      targetType: "mercadopago_connection",
-      targetId: params.userId,
-      metadata: { liveMode: tokens.liveMode },
-    });
-  }).catch((error: unknown) => {
-    // Partial unique index: one ACTIVE connection per Mercado Pago account.
-    throw isUniqueViolation(error) ? inUse() : error;
-  });
   await deps.db.oAuthState.deleteMany({ where: { expiresAt: { lt: now } } });
   return { mercadoPagoUserId: tokens.mercadoPagoUserId };
 }
@@ -149,11 +162,17 @@ export type ActiveConnection = { accessToken: string; mercadoPagoUserId: string 
  * Returns a usable access token for the user, refreshing it under a row lock so
  * concurrent requests perform a single refresh (refresh tokens are single use).
  */
-export async function getActiveAccessToken(deps: ConnectionDeps, userId: string): Promise<ActiveConnection> {
+export async function getActiveAccessToken(
+  deps: ConnectionDeps,
+  userId: string,
+): Promise<ActiveConnection> {
   const now = deps.now?.() ?? new Date();
   const connection = await deps.db.mercadoPagoConnection.findUnique({ where: { userId } });
   if (!connection || connection.status !== "ACTIVE") {
-    throw new DomainError("MERCADOPAGO_NOT_CONNECTED", "Quien armó la lista no tiene Mercado Pago conectado.");
+    throw new DomainError(
+      "MERCADOPAGO_NOT_CONNECTED",
+      "Quien armó la lista no tiene Mercado Pago conectado.",
+    );
   }
   if (connection.tokenExpiresAt.getTime() - now.getTime() > REFRESH_WINDOW_MS) {
     return {
@@ -166,7 +185,8 @@ export async function getActiveAccessToken(deps: ConnectionDeps, userId: string)
     async (tx): Promise<ActiveConnection | "REVOKED"> => {
       const [locked] = await tx.$queryRaw<{ id: string }[]>`
         SELECT "id" FROM "MercadoPagoConnection" WHERE "userId" = ${userId} FOR UPDATE`;
-      if (!locked) throw new DomainError("MERCADOPAGO_NOT_CONNECTED", "Mercado Pago no está conectado.");
+      if (!locked)
+        throw new DomainError("MERCADOPAGO_NOT_CONNECTED", "Mercado Pago no está conectado.");
       const current = await tx.mercadoPagoConnection.findUniqueOrThrow({ where: { userId } });
       if (current.status !== "ACTIVE") {
         throw new DomainError("MERCADOPAGO_NOT_CONNECTED", "Mercado Pago no está conectado.");
@@ -178,7 +198,10 @@ export async function getActiveAccessToken(deps: ConnectionDeps, userId: string)
           mercadoPagoUserId: current.mercadoPagoUserId,
         };
       }
-      const refreshToken = deps.vault.decrypt(current.encryptedRefreshToken, refreshContext(userId));
+      const refreshToken = deps.vault.decrypt(
+        current.encryptedRefreshToken,
+        refreshContext(userId),
+      );
       let tokens: MercadoPagoTokens;
       try {
         tokens = await deps.oauth.refresh(refreshToken);
@@ -194,7 +217,10 @@ export async function getActiveAccessToken(deps: ConnectionDeps, userId: string)
             mercadoPagoUserId: current.mercadoPagoUserId,
           };
         }
-        throw new DomainError("UPSTREAM_UNAVAILABLE", "Mercado Pago no responde. Probá en unos minutos.");
+        throw new DomainError(
+          "UPSTREAM_UNAVAILABLE",
+          "Mercado Pago no responde. Probá en unos minutos.",
+        );
       }
       await tx.mercadoPagoConnection.update({
         where: { userId },
@@ -218,7 +244,10 @@ export async function getActiveAccessToken(deps: ConnectionDeps, userId: string)
   );
   if (outcome === "REVOKED") {
     await deps.db.mercadoPagoConnection.update({ where: { userId }, data: { status: "REVOKED" } });
-    throw new DomainError("MERCADOPAGO_NOT_CONNECTED", "La conexión con Mercado Pago fue revocada.");
+    throw new DomainError(
+      "MERCADOPAGO_NOT_CONNECTED",
+      "La conexión con Mercado Pago fue revocada.",
+    );
   }
   return outcome;
 }
@@ -231,12 +260,23 @@ export type ConnectionStatus = {
 };
 
 /** Connection state for display; never includes tokens. */
-export async function getConnectionStatus(db: PrismaClient, userId: string, now = new Date()): Promise<ConnectionStatus> {
+export async function getConnectionStatus(
+  db: PrismaClient,
+  userId: string,
+  now = new Date(),
+): Promise<ConnectionStatus> {
   const connection = await db.mercadoPagoConnection.findUnique({
     where: { userId },
-    select: { status: true, mercadoPagoUserId: true, liveMode: true, createdAt: true, tokenExpiresAt: true },
+    select: {
+      status: true,
+      mercadoPagoUserId: true,
+      liveMode: true,
+      createdAt: true,
+      tokenExpiresAt: true,
+    },
   });
-  if (!connection) return { status: "NOT_CONNECTED", mercadoPagoUserId: null, liveMode: false, connectedAt: null };
+  if (!connection)
+    return { status: "NOT_CONNECTED", mercadoPagoUserId: null, liveMode: false, connectedAt: null };
   const expired = connection.status === "ACTIVE" && connection.tokenExpiresAt <= now;
   return {
     status: expired ? "EXPIRED" : connection.status,

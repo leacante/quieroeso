@@ -20,7 +20,11 @@ function assert(condition, message) {
 }
 
 async function get(path, init) {
-  return fetch(new URL(path, base), { redirect: "manual", signal: AbortSignal.timeout(15_000), ...init });
+  return fetch(new URL(path, base), {
+    redirect: "manual",
+    signal: AbortSignal.timeout(15_000),
+    ...init,
+  });
 }
 
 await check("home renders", async () => {
@@ -32,7 +36,10 @@ await check("home renders", async () => {
 await check("healthcheck ok", async () => {
   const response = await get("/api/health");
   const body = await response.json();
-  assert(response.status === 200 && body.database === "ok", `status ${response.status} ${JSON.stringify(body)}`);
+  assert(
+    response.status === 200 && body.database === "ok",
+    `status ${response.status} ${JSON.stringify(body)}`,
+  );
 });
 
 await check("login page", async () => {
@@ -86,7 +93,10 @@ await check("checkout endpoint alive (validation only)", async () => {
     body: JSON.stringify({ listItemId: "smoke", amountMinor: "1" }),
   });
   assert(response.status === 422, `expected 422, got ${response.status}`);
-  assert(response.headers.get("content-type")?.includes("application/problem+json"), "not problem+json");
+  assert(
+    response.headers.get("content-type")?.includes("application/problem+json"),
+    "not problem+json",
+  );
 });
 
 await check("webhook rejects unsigned calls", async () => {
@@ -100,7 +110,9 @@ await check("webhook rejects unsigned calls", async () => {
 
 for (const result of results) {
   const mark = result.ok ? "PASS" : "FAIL";
-  console.log(`${mark}  ${result.name} (${result.ms} ms)${result.error ? ` — ${result.error}` : ""}`);
+  console.log(
+    `${mark}  ${result.name} (${result.ms} ms)${result.error ? ` — ${result.error}` : ""}`,
+  );
 }
 const failed = results.filter((result) => !result.ok).length;
 console.log(`\n${results.length - failed}/${results.length} checks passed against ${base.origin}`);

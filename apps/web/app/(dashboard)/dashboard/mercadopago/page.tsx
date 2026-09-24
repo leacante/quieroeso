@@ -14,7 +14,10 @@ const RESULT_MESSAGES: Record<string, { tone: "success" | "error" | "info"; text
   denied: { tone: "info", text: "Cancelaste la conexión. Podés intentarlo cuando quieras." },
   expired: { tone: "error", text: "El enlace de conexión venció o ya se usó. Probá de nuevo." },
   "in-use": { tone: "error", text: "Esa cuenta de Mercado Pago ya está conectada a otro usuario." },
-  error: { tone: "error", text: "No pudimos conectar con Mercado Pago. Probá de nuevo en unos minutos." },
+  error: {
+    tone: "error",
+    text: "No pudimos conectar con Mercado Pago. Probá de nuevo en unos minutos.",
+  },
 };
 
 const STATUS_LABEL = {
@@ -25,7 +28,9 @@ const STATUS_LABEL = {
   DISCONNECTED: { label: "Desconectada", tone: "neutral" },
 } as const;
 
-export default async function MercadoPagoPage({ searchParams }: PageProps<"/dashboard/mercadopago">) {
+export default async function MercadoPagoPage({
+  searchParams,
+}: PageProps<"/dashboard/mercadopago">) {
   const user = await requirePageUser("/dashboard/mercadopago");
   const { status: result } = await searchParams;
   const connection = await getConnectionStatus(getPrisma(), user.id);
@@ -51,10 +56,14 @@ export default async function MercadoPagoPage({ searchParams }: PageProps<"/dash
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-bold">Estado de la conexión</h2>
           <Badge tone={statusInfo.tone} data-testid="mp-status">
-            {connection.status === "ACTIVE" ? <CheckCircle2 className="size-3.5" aria-hidden="true" /> : null}
+            {connection.status === "ACTIVE" ? (
+              <CheckCircle2 className="size-3.5" aria-hidden="true" />
+            ) : null}
             {statusInfo.label}
           </Badge>
-          {connection.status === "ACTIVE" && !connection.liveMode ? <Badge tone="warning">Modo prueba</Badge> : null}
+          {connection.status === "ACTIVE" && !connection.liveMode ? (
+            <Badge tone="warning">Modo prueba</Badge>
+          ) : null}
         </div>
         {connection.connectedAt && connection.status !== "NOT_CONNECTED" ? (
           <p className="text-sm text-muted-foreground">
@@ -76,7 +85,9 @@ export default async function MercadoPagoPage({ searchParams }: PageProps<"/dash
           Cómo cuidamos tu cuenta
         </p>
         <ul className="ml-5 flex list-disc flex-col gap-1 text-muted-foreground">
-          <li>Usamos la autorización oficial de Mercado Pago (OAuth); nunca vemos tu contraseña.</li>
+          <li>
+            Usamos la autorización oficial de Mercado Pago (OAuth); nunca vemos tu contraseña.
+          </li>
           <li>Los permisos se guardan cifrados y podés desconectarte en cualquier momento.</li>
           <li>Los reembolsos se hacen desde tu cuenta de Mercado Pago.</li>
         </ul>

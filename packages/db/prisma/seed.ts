@@ -4,6 +4,7 @@
  * through the domain services, so they follow the same rules as the app.
  * Safe to run repeatedly.
  */
+import { realpathSync } from "node:fs";
 import path from "node:path";
 import { loadRootDotenv } from "@quieroeso/config/load-dotenv";
 import { createPrismaClient } from "../src/client";
@@ -34,7 +35,10 @@ export async function seedBaseData(prisma: PrismaClient): Promise<void> {
   });
 }
 
-const isEntryPoint = process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename;
+// realpath: package managers expose workspaces through symlinks.
+const isEntryPoint =
+  process.argv[1] !== undefined &&
+  realpathSync(path.resolve(process.argv[1])) === realpathSync(import.meta.filename);
 
 if (isEntryPoint) {
   loadRootDotenv(import.meta.dirname);

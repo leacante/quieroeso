@@ -14,6 +14,8 @@ import {
 const appTokens = new Set<string>();
 /** Runtime overrides set by tests through the admin endpoint (price, status). */
 const itemOverrides = new Map<string, Partial<{ price: number; status: string; title: string }>>();
+/** Simulated outage: every API call answers 503. */
+let apiOutage = false;
 
 function slugify(text: string): string {
   return text
@@ -64,6 +66,10 @@ export const meliRoutes: Route[] = [
     method: "GET",
     pattern: /^\/meli\/items\/([A-Z]{3}\d+)$/,
     handler(request, [id = ""], response) {
+      if (apiOutage) {
+        sendJson(response, 503, { message: "service unavailable", status: 503 });
+        return;
+      }
       if (!authorized(request)) {
         sendJson(response, 401, {
           message: "invalid access token",
@@ -179,6 +185,14 @@ export const meliRoutes: Route[] = [
   },
   {
     method: "POST",
+    pattern: /^\/_admin\/meli\/outage$/,
+    handler(request, _params, response) {
+      apiOutage = Boolean(parseBody(request).enabled);
+      sendJson(response, 200, { ok: true, outage: apiOutage });
+    },
+  },
+  {
+    method: "POST",
     pattern: /^\/_admin\/meli\/items\/([A-Z]{3}\d+)$/,
     handler(request, [id = ""], response) {
       const body = parseBody(request) as Partial<{ price: number; status: string; title: string }>;
@@ -190,4 +204,5 @@ export const meliRoutes: Route[] = [
 
 export function resetMeli(): void {
   itemOverrides.clear();
+  apiOutage = false;
 }

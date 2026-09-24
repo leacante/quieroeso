@@ -74,7 +74,9 @@ export async function getPayment(
   paymentId: string,
 ): Promise<MercadoPagoPayment> {
   if (!/^\d{1,20}$/.test(paymentId)) throw new MercadoPagoApiError("BAD_REQUEST", null);
-  const raw = await mercadoPagoRequest(options, "GET", `/v1/payments/${paymentId}`, { accessToken });
+  const raw = await mercadoPagoRequest(options, "GET", `/v1/payments/${paymentId}`, {
+    accessToken,
+  });
   const parsed = paymentSchema.safeParse(raw);
   if (!parsed.success) throw new MercadoPagoApiError("UPSTREAM", 200);
   return parsed.data;

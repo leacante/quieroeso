@@ -1,7 +1,14 @@
 import type { PrismaClient } from "@quieroeso/db";
 
 /** Statuses shown to owners; abandoned checkouts (CREATED/CHECKOUT_CREATED) are noise. */
-const VISIBLE_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED", "REFUNDED", "CHARGED_BACK"] as const;
+const VISIBLE_STATUSES = [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "CANCELLED",
+  "REFUNDED",
+  "CHARGED_BACK",
+] as const;
 
 /**
  * Contribution history for a list owner. Contains what contributors chose to share

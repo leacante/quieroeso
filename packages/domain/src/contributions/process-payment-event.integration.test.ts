@@ -27,7 +27,12 @@ function fakeMercadoPago() {
       return { ...payment };
     }),
   };
-  const setPayment = (id: string, contributionId: string, status: string, overrides: Partial<MercadoPagoPayment> = {}) =>
+  const setPayment = (
+    id: string,
+    contributionId: string,
+    status: string,
+    overrides: Partial<MercadoPagoPayment> = {},
+  ) =>
     payments.set(id, {
       id,
       status,
@@ -63,7 +68,11 @@ async function setup() {
 }
 
 let eventCounter = 0;
-async function deliver(deps: PaymentEventDeps, paymentId: string, eventId = `evt-${++eventCounter}`) {
+async function deliver(
+  deps: PaymentEventDeps,
+  paymentId: string,
+  eventId = `evt-${++eventCounter}`,
+) {
   const recorded = await recordWebhookEvent(ctx.db, {
     providerEventId: eventId,
     topic: "payment",
@@ -72,10 +81,16 @@ async function deliver(deps: PaymentEventDeps, paymentId: string, eventId = `evt
     rawBody: JSON.stringify({ id: eventId, data: { id: paymentId } }),
   });
   if (recorded.status === "DUPLICATE") return "DUPLICATE" as const;
-  return processPaymentEvent(deps, { eventId: recorded.id, topic: "payment", paymentId, collectorId: "1001" });
+  return processPaymentEvent(deps, {
+    eventId: recorded.id,
+    topic: "payment",
+    paymentId,
+    collectorId: "1001",
+  });
 }
 
-const statusOf = async (id: string) => (await ctx.db.contribution.findUniqueOrThrow({ where: { id } })).status;
+const statusOf = async (id: string) =>
+  (await ctx.db.contribution.findUniqueOrThrow({ where: { id } })).status;
 
 describe("processPaymentEvent", () => {
   it("approves once and consumes the free slot", async () => {
@@ -156,7 +171,9 @@ describe("processPaymentEvent", () => {
     await deliver(mp.deps, "9008");
     mp.setPayment("9009", contribution.id, "approved");
     expect(await deliver(mp.deps, "9009")).toBe("PROCESSED");
-    expect(await ctx.db.contribution.findUniqueOrThrow({ where: { id: contribution.id } })).toMatchObject({
+    expect(
+      await ctx.db.contribution.findUniqueOrThrow({ where: { id: contribution.id } }),
+    ).toMatchObject({
       status: "APPROVED",
       mpPaymentId: "9009",
     });
@@ -177,7 +194,9 @@ describe("processPaymentEvent", () => {
     }
     expect(await statusOf(contribution.id)).toBe("CHECKOUT_CREATED");
     expect(
-      (await ctx.db.webhookEvent.findMany({ orderBy: { createdAt: "asc" } })).map((event) => event.result),
+      (await ctx.db.webhookEvent.findMany({ orderBy: { createdAt: "asc" } })).map(
+        (event) => event.result,
+      ),
     ).toEqual(["IGNORED_MISMATCH", "IGNORED_MISMATCH", "IGNORED_MISMATCH", "IGNORED_REFERENCE"]);
   });
 
@@ -191,10 +210,20 @@ describe("processPaymentEvent", () => {
       rawBody: "{}",
     });
     expect(
-      await processPaymentEvent(mp.deps, { eventId: recorded.id, topic: "merchant_order", paymentId: "123", collectorId: "1001" }),
+      await processPaymentEvent(mp.deps, {
+        eventId: recorded.id,
+        topic: "merchant_order",
+        paymentId: "123",
+        collectorId: "1001",
+      }),
     ).toBe("IGNORED");
     expect(
-      await processPaymentEvent(mp.deps, { eventId: "", topic: "payment", paymentId: "1", collectorId: "4040" }),
+      await processPaymentEvent(mp.deps, {
+        eventId: "",
+        topic: "payment",
+        paymentId: "1",
+        collectorId: "4040",
+      }),
     ).toBe("IGNORED");
   });
 
@@ -209,9 +238,16 @@ describe("processPaymentEvent", () => {
       rawBody: "{}",
     });
     await expect(
-      processPaymentEvent(mp.deps, { eventId: recorded.id, topic: "payment", paymentId: "9020", collectorId: "1001" }),
+      processPaymentEvent(mp.deps, {
+        eventId: recorded.id,
+        topic: "payment",
+        paymentId: "9020",
+        collectorId: "1001",
+      }),
     ).rejects.toThrow();
-    expect(await ctx.db.webhookEvent.findUniqueOrThrow({ where: { id: recorded.id } })).toMatchObject({
+    expect(
+      await ctx.db.webhookEvent.findUniqueOrThrow({ where: { id: recorded.id } }),
+    ).toMatchObject({
       processedAt: null,
     });
 

@@ -43,7 +43,11 @@ export function MercadoPagoActions({ connected }: { connected: boolean }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={connect} loading={pending && !confirm} icon={<Link2 className="size-5" aria-hidden="true" />}>
+        <Button
+          onClick={connect}
+          loading={pending && !confirm}
+          icon={<Link2 className="size-5" aria-hidden="true" />}
+        >
           {connected ? "Reconectar Mercado Pago" : "Conectar Mercado Pago"}
         </Button>
         {connected ? (
@@ -58,7 +62,11 @@ export function MercadoPagoActions({ connected }: { connected: boolean }) {
               </Button>
             </span>
           ) : (
-            <Button variant="ghost" onClick={() => setConfirm(true)} icon={<Unlink className="size-5" aria-hidden="true" />}>
+            <Button
+              variant="ghost"
+              onClick={() => setConfirm(true)}
+              icon={<Unlink className="size-5" aria-hidden="true" />}
+            >
               Desconectar
             </Button>
           )

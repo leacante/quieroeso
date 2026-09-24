@@ -46,9 +46,13 @@ export async function enforceRateLimit(
 ): Promise<void> {
   const result = await consumeRateLimit(db, key, rule, now);
   if (!result.allowed) {
-    throw new DomainError("RATE_LIMITED", "Hiciste demasiados intentos. Esperá unos minutos y probá de nuevo.", {
-      retryAfterSeconds: result.retryAfterSeconds,
-    });
+    throw new DomainError(
+      "RATE_LIMITED",
+      "Hiciste demasiados intentos. Esperá unos minutos y probá de nuevo.",
+      {
+        retryAfterSeconds: result.retryAfterSeconds,
+      },
+    );
   }
 }
 

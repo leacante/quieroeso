@@ -35,7 +35,11 @@ export type ContributionDeps = {
   db: PrismaClient;
   /** Access token of the list owner's Mercado Pago account (refreshed if needed). */
   getOwnerAccessToken(ownerId: string): Promise<{ accessToken: string; mercadoPagoUserId: string }>;
-  createPreference(accessToken: string, input: PreferenceInput, idempotencyKey: string): Promise<CreatedPreference>;
+  createPreference(
+    accessToken: string,
+    input: PreferenceInput,
+    idempotencyKey: string,
+  ): Promise<CreatedPreference>;
   /** Abuse control, called once the target list is known (e.g. per IP hash and list). */
   enforceCheckoutLimit?(listId: string): Promise<void>;
   config: {
@@ -61,7 +65,8 @@ function resultUrl(appUrl: string, contributionId: string, outcome: string): str
 
 function assertCheckoutUrl(url: string, hosts: string[]): string {
   const parsed = new URL(url);
-  const local = parsed.protocol === "http:" && /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(parsed.host);
+  const local =
+    parsed.protocol === "http:" && /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(parsed.host);
   if (!hosts.includes(parsed.host.toLowerCase()) || !(parsed.protocol === "https:" || local)) {
     throw new DomainError("UPSTREAM_UNAVAILABLE", "No pudimos iniciar el pago. Probá de nuevo.");
   }
@@ -83,8 +88,14 @@ export async function createContribution(
   const now = deps.now?.() ?? new Date();
 
   const existing = await deps.db.contribution.findUnique({ where: { idempotencyKey } });
-  if (existing && (existing.listItemId !== input.listItemId || existing.amountMinor !== input.amountMinor)) {
-    throw new DomainError("CONFLICT", "Esta solicitud ya se usó para otro aporte. Recargá la página.");
+  if (
+    existing &&
+    (existing.listItemId !== input.listItemId || existing.amountMinor !== input.amountMinor)
+  ) {
+    throw new DomainError(
+      "CONFLICT",
+      "Esta solicitud ya se usó para otro aporte. Recargá la página.",
+    );
   }
 
   const item = await deps.db.listItem.findUnique({
@@ -98,7 +109,8 @@ export async function createContribution(
     (input.access.type === "public"
       ? list.visibility === "PUBLIC" && list.slug === input.access.slug
       : list.visibility !== "PRIVATE" && list.shareTokenHash === sha256Hex(input.access.token));
-  if (!item || !list || !accessOk) throw new DomainError("NOT_FOUND", "No encontramos ese producto.");
+  if (!item || !list || !accessOk)
+    throw new DomainError("NOT_FOUND", "No encontramos ese producto.");
   if (list.fundingMode !== "PER_ITEM" || item.archivedAt || !item.targetAmountMinor) {
     throw new DomainError("INVALID_STATE", NOT_AVAILABLE);
   }
@@ -128,11 +140,16 @@ export async function createContribution(
         }),
       ]);
       const target = item.targetAmountMinor!;
-      const remaining = target - (approved._sum.amountMinor ?? 0n) - (reserved._sum.amountMinor ?? 0n);
+      const remaining =
+        target - (approved._sum.amountMinor ?? 0n) - (reserved._sum.amountMinor ?? 0n);
       if (remaining <= 0n) {
-        throw new DomainError("INVALID_STATE", "Este producto ya tiene aportes por el total. ¡Gracias!");
+        throw new DomainError(
+          "INVALID_STATE",
+          "Este producto ya tiene aportes por el total. ¡Gracias!",
+        );
       }
-      const minimum = deps.config.minContributionMinor < remaining ? deps.config.minContributionMinor : remaining;
+      const minimum =
+        deps.config.minContributionMinor < remaining ? deps.config.minContributionMinor : remaining;
       if (input.amountMinor < minimum || input.amountMinor > remaining) {
         const range = (value: bigint) => formatMinor(value).replace(/\s/g, " ");
         const detail = `Podés aportar entre ${range(minimum)} y ${range(remaining)}.`;
@@ -184,11 +201,18 @@ export async function createContribution(
   } catch (error) {
     getLogger().warn({ err: error, contributionId: contribution.id }, "checkout preference failed");
     if (error instanceof MercadoPagoApiError && error.kind === "BAD_REQUEST") {
-      await deps.db.contribution.update({ where: { id: contribution.id }, data: { status: "CANCELLED" } });
+      await deps.db.contribution.update({
+        where: { id: contribution.id },
+        data: { status: "CANCELLED" },
+      });
     }
-    throw new DomainError("UPSTREAM_UNAVAILABLE", "Mercado Pago no responde. Probá de nuevo en unos minutos.", {
-      retryAfterSeconds: 10,
-    });
+    throw new DomainError(
+      "UPSTREAM_UNAVAILABLE",
+      "Mercado Pago no responde. Probá de nuevo en unos minutos.",
+      {
+        retryAfterSeconds: 10,
+      },
+    );
   }
 
   const checkoutUrl = assertCheckoutUrl(preference.initPoint, deps.config.checkoutHosts);

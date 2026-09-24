@@ -13,12 +13,16 @@ import { createJobRuntime, runJob } from "./runtime";
 
 const runtime = createJobRuntime("refresh-products");
 
-await runJob(runtime.logger, () => runtime.db.$disconnect(), async () => {
-  const products = await refreshStaleProducts(
-    { db: runtime.db, meli: runtime.meli },
-    { batchSize: 50, concurrency: 5 },
-  );
-  const webhooks = await processPendingWebhookEvents(runtime.paymentEvents);
-  const purged = await purgeExpiredSecurityRecords(runtime.db);
-  return { products, webhooks, purged };
-});
+await runJob(
+  runtime.logger,
+  () => runtime.db.$disconnect(),
+  async () => {
+    const products = await refreshStaleProducts(
+      { db: runtime.db, meli: runtime.meli },
+      { batchSize: 50, concurrency: 5 },
+    );
+    const webhooks = await processPendingWebhookEvents(runtime.paymentEvents);
+    const purged = await purgeExpiredSecurityRecords(runtime.db);
+    return { products, webhooks, purged };
+  },
+);

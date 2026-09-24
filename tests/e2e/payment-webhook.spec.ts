@@ -10,9 +10,17 @@ async function eventually(page: Page, assertion: () => Promise<void>) {
   }).toPass({ timeout: 15_000, intervals: [250, 500, 1_000] });
 }
 
-type MockPayment = { id: number; status: string; external_reference: string; transaction_amount: number };
+type MockPayment = {
+  id: number;
+  status: string;
+  external_reference: string;
+  transaction_amount: number;
+};
 
-async function paymentsFor(request: APIRequestContext, contributionId: string): Promise<MockPayment[]> {
+async function paymentsFor(
+  request: APIRequestContext,
+  contributionId: string,
+): Promise<MockPayment[]> {
   const all = (await (await request.get(`${MOCK_URL}/_admin/mp/payments`)).json()) as MockPayment[];
   return all.filter((payment) => payment.external_reference === contributionId);
 }
@@ -35,7 +43,9 @@ test.describe("Mercado Pago webhooks", () => {
     const visitor = await (await browser.newContext()).newPage();
     await visitor.goto(url);
     await contribute(visitor, "Cafetera", "50000");
-    await expect(visitor.getByRole("heading", { name: "¡Gracias por tu aporte!" })).toBeVisible({ timeout: 20_000 });
+    await expect(visitor.getByRole("heading", { name: "¡Gracias por tu aporte!" })).toBeVisible({
+      timeout: 20_000,
+    });
     const contributionId = new URL(visitor.url()).searchParams.get("contribution")!;
 
     // Progress reflects only approved money.
@@ -59,26 +69,36 @@ test.describe("Mercado Pago webhooks", () => {
     // A rejected attempt on another product is recorded but never credited.
     await visitor.goto(url);
     await contribute(visitor, "Auriculares", "10000", "rejected");
-    await expect(visitor.getByRole("heading", { name: "El pago no se completó" })).toBeVisible({ timeout: 20_000 });
+    await expect(visitor.getByRole("heading", { name: "El pago no se completó" })).toBeVisible({
+      timeout: 20_000,
+    });
 
     // Refund issued from Mercado Pago.
-    await request.post(`${MOCK_URL}/_admin/mp/payments/${payment!.id}/status`, { data: { status: "refunded" } });
+    await request.post(`${MOCK_URL}/_admin/mp/payments/${payment!.id}/status`, {
+      data: { status: "refunded" },
+    });
     await eventually(page, () =>
-      expect(page.getByTestId("contribution-row").filter({ hasText: "Cafetera" })).toContainText("Reembolsado"),
+      expect(page.getByTestId("contribution-row").filter({ hasText: "Cafetera" })).toContainText(
+        "Reembolsado",
+      ),
     );
     await expect(page.getByTestId("total-amount")).toHaveText("$ 0");
 
     // Chargeback on a fresh approved payment.
     await visitor.goto(url);
     await contribute(visitor, "Auriculares", "20000");
-    await expect(visitor.getByRole("heading", { name: "¡Gracias por tu aporte!" })).toBeVisible({ timeout: 20_000 });
+    await expect(visitor.getByRole("heading", { name: "¡Gracias por tu aporte!" })).toBeVisible({
+      timeout: 20_000,
+    });
     const secondId = new URL(visitor.url()).searchParams.get("contribution")!;
     const [second] = await paymentsFor(request, secondId);
-    await request.post(`${MOCK_URL}/_admin/mp/payments/${second!.id}/status`, { data: { status: "charged_back" } });
+    await request.post(`${MOCK_URL}/_admin/mp/payments/${second!.id}/status`, {
+      data: { status: "charged_back" },
+    });
     await eventually(page, () =>
-      expect(page.getByTestId("contribution-row").filter({ hasText: "Auriculares" }).first()).toContainText(
-        "Contracargo",
-      ),
+      expect(
+        page.getByTestId("contribution-row").filter({ hasText: "Auriculares" }).first(),
+      ).toContainText("Contracargo"),
     );
   });
 

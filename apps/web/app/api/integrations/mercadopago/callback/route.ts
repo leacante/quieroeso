@@ -25,7 +25,9 @@ export async function GET(request: Request): Promise<Response> {
     return back("connected");
   } catch (error) {
     if (error instanceof DomainError) {
-      return back(error.code === "CONFLICT" ? "in-use" : error.code === "INVALID_STATE" ? "expired" : "error");
+      return back(
+        error.code === "CONFLICT" ? "in-use" : error.code === "INVALID_STATE" ? "expired" : "error",
+      );
     }
     logger.error({ err: error }, "mercadopago oauth callback failed");
     return back("error");

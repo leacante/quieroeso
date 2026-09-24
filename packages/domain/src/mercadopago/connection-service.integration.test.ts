@@ -57,17 +57,26 @@ async function codeOf(promise: Promise<unknown>) {
 describe("Mercado Pago OAuth", () => {
   it("connects with PKCE and stores only encrypted tokens", async () => {
     const user = await createTestUser(ctx.db);
-    const exchanged = tokens({ accessToken: "APP_USR-secret-access", refreshToken: "TG-secret-refresh" });
+    const exchanged = tokens({
+      accessToken: "APP_USR-secret-access",
+      refreshToken: "TG-secret-refresh",
+    });
     const d = deps({ exchangeCode: vi.fn(async () => exchanged) });
     const { authorizationUrl } = await startMercadoPagoAuthorization(d, user.id);
     const url = new URL(authorizationUrl);
     expect(url.searchParams.get("code_challenge_method")).toBe("S256");
 
-    await completeMercadoPagoAuthorization(d, { userId: user.id, state: stateOf(authorizationUrl), code: "TG-code" });
+    await completeMercadoPagoAuthorization(d, {
+      userId: user.id,
+      state: stateOf(authorizationUrl),
+      code: "TG-code",
+    });
     const call = vi.mocked(d.oauth.exchangeCode).mock.calls[0]![0];
     expect(call.codeVerifier).toMatch(/^[\w-]{43}$/);
 
-    const row = await ctx.db.mercadoPagoConnection.findUniqueOrThrow({ where: { userId: user.id } });
+    const row = await ctx.db.mercadoPagoConnection.findUniqueOrThrow({
+      where: { userId: user.id },
+    });
     expect(JSON.stringify(row)).not.toContain("APP_USR-secret-access");
     expect(JSON.stringify(row)).not.toContain("TG-secret-refresh");
     expect(row).toMatchObject({ status: "ACTIVE", mercadoPagoUserId: "1001", keyVersion: 1 });
@@ -82,20 +91,26 @@ describe("Mercado Pago OAuth", () => {
 
     const first = stateOf((await startMercadoPagoAuthorization(d, user.id)).authorizationUrl);
     await completeMercadoPagoAuthorization(d, { userId: user.id, state: first, code: "c" });
-    expect(await codeOf(completeMercadoPagoAuthorization(d, { userId: user.id, state: first, code: "c" }))).toBe(
-      "INVALID_STATE",
-    );
+    expect(
+      await codeOf(
+        completeMercadoPagoAuthorization(d, { userId: user.id, state: first, code: "c" }),
+      ),
+    ).toBe("INVALID_STATE");
 
     const foreign = stateOf((await startMercadoPagoAuthorization(d, user.id)).authorizationUrl);
-    expect(await codeOf(completeMercadoPagoAuthorization(d, { userId: other.id, state: foreign, code: "c" }))).toBe(
-      "INVALID_STATE",
-    );
+    expect(
+      await codeOf(
+        completeMercadoPagoAuthorization(d, { userId: other.id, state: foreign, code: "c" }),
+      ),
+    ).toBe("INVALID_STATE");
 
     const old = stateOf((await startMercadoPagoAuthorization(d, user.id)).authorizationUrl);
     const later = deps({}, () => new Date(Date.now() + 11 * 60_000));
-    expect(await codeOf(completeMercadoPagoAuthorization(later, { userId: user.id, state: old, code: "c" }))).toBe(
-      "INVALID_STATE",
-    );
+    expect(
+      await codeOf(
+        completeMercadoPagoAuthorization(later, { userId: user.id, state: old, code: "c" }),
+      ),
+    ).toBe("INVALID_STATE");
   });
 
   it("refuses an account already connected to another user", async () => {
@@ -130,7 +145,9 @@ describe("Mercado Pago OAuth", () => {
 
 describe("access token refresh", () => {
   async function connectExpiringSoon(userId: string) {
-    const d = deps({ exchangeCode: vi.fn(async () => tokens({ expiresAt: new Date(Date.now() + 3600_000) })) });
+    const d = deps({
+      exchangeCode: vi.fn(async () => tokens({ expiresAt: new Date(Date.now() + 3600_000) })),
+    });
     await completeMercadoPagoAuthorization(d, {
       userId,
       state: stateOf((await startMercadoPagoAuthorization(d, userId)).authorizationUrl),
@@ -146,7 +163,9 @@ describe("access token refresh", () => {
       return tokens({ accessToken: "APP_USR-new" });
     });
     const d = deps({ refresh });
-    const results = await Promise.all(Array.from({ length: 5 }, () => getActiveAccessToken(d, user.id)));
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () => getActiveAccessToken(d, user.id)),
+    );
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(results.every((result) => result.accessToken === "APP_USR-new")).toBe(true);
   });
@@ -154,7 +173,9 @@ describe("access token refresh", () => {
   it("marks the connection revoked on invalid_grant", async () => {
     const user = await createTestUser(ctx.db);
     await connectExpiringSoon(user.id);
-    const d = deps({ refresh: vi.fn(async () => Promise.reject(new MercadoPagoApiError("INVALID_GRANT", 400))) });
+    const d = deps({
+      refresh: vi.fn(async () => Promise.reject(new MercadoPagoApiError("INVALID_GRANT", 400))),
+    });
     expect(await codeOf(getActiveAccessToken(d, user.id))).toBe("MERCADOPAGO_NOT_CONNECTED");
     expect(await getConnectionStatus(ctx.db, user.id)).toMatchObject({ status: "REVOKED" });
   });
@@ -163,8 +184,14 @@ describe("access token refresh", () => {
     const user = await createTestUser(ctx.db);
     await connectExpiringSoon(user.id);
     await disconnectMercadoPago(ctx.db, user.id);
-    const row = await ctx.db.mercadoPagoConnection.findUniqueOrThrow({ where: { userId: user.id } });
-    expect(row).toMatchObject({ status: "DISCONNECTED", encryptedAccessToken: "", encryptedRefreshToken: "" });
+    const row = await ctx.db.mercadoPagoConnection.findUniqueOrThrow({
+      where: { userId: user.id },
+    });
+    expect(row).toMatchObject({
+      status: "DISCONNECTED",
+      encryptedAccessToken: "",
+      encryptedRefreshToken: "",
+    });
     expect(await codeOf(getActiveAccessToken(deps(), user.id))).toBe("MERCADOPAGO_NOT_CONNECTED");
   });
 });

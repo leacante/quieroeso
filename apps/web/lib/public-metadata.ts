@@ -78,7 +78,10 @@ export function toPublicListJson(list: PublicListView, pageUrl: string) {
       url: item.sourceUrl,
       source: item.sourceType,
       availability: item.availability,
-      price: item.priceMinor === null ? null : { amount: minorToDecimalString(item.priceMinor), currency: "ARS" },
+      price:
+        item.priceMinor === null
+          ? null
+          : { amount: minorToDecimalString(item.priceMinor), currency: "ARS" },
       funding:
         list.acceptsContributions && item.targetAmountMinor !== null
           ? {

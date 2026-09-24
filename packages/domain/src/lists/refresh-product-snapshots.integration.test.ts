@@ -29,7 +29,11 @@ async function seedItems(count: number, syncedHoursAgo: number, prefix = "MLA100
           sourceUrl: `https://articulo.mercadolibre.com.ar/${externalId}`,
           title: "Título original",
           imageUrl: "https://http2.mlstatic.com/old.jpg",
-          sourceSnapshot: { title: "Título original", imageUrl: "https://http2.mlstatic.com/old.jpg", priceMinor: "100000" },
+          sourceSnapshot: {
+            title: "Título original",
+            imageUrl: "https://http2.mlstatic.com/old.jpg",
+            priceMinor: "100000",
+          },
           priceMinor: 100_000n,
           availability: "AVAILABLE",
           lastSyncedAt: new Date(Date.now() - syncedHoursAgo * HOUR),
@@ -70,7 +74,12 @@ describe("refreshStaleProducts", () => {
     expect(meli.fetchSnapshot).toHaveBeenCalledTimes(3);
 
     const staleRow = await ctx.db.listItem.findUniqueOrThrow({ where: { id: stale[0]!.id } });
-    expect(staleRow).toMatchObject({ priceMinor: 120_000n, title: "Título nuevo", syncClaimedAt: null, lastSyncError: null });
+    expect(staleRow).toMatchObject({
+      priceMinor: 120_000n,
+      title: "Título nuevo",
+      syncClaimedAt: null,
+      lastSyncError: null,
+    });
     const freshRow = await ctx.db.listItem.findUniqueOrThrow({ where: { id: fresh[0]!.id } });
     expect(freshRow.priceMinor).toBe(100_000n);
   });
@@ -80,7 +89,11 @@ describe("refreshStaleProducts", () => {
     await ctx.db.listItem.update({ where: { id: item!.id }, data: { title: "Mi cafetera" } });
     await refreshStaleProducts({ db: ctx.db, meli: gateway(), sleep: noSleep });
     const row = await ctx.db.listItem.findUniqueOrThrow({ where: { id: item!.id } });
-    expect(row).toMatchObject({ title: "Mi cafetera", imageUrl: "https://http2.mlstatic.com/new.jpg", priceMinor: 120_000n });
+    expect(row).toMatchObject({
+      title: "Mi cafetera",
+      imageUrl: "https://http2.mlstatic.com/new.jpg",
+      priceMinor: 120_000n,
+    });
   });
 
   it("processes batches of 50 with at most 5 concurrent requests", async () => {
@@ -121,13 +134,19 @@ describe("refreshStaleProducts", () => {
       if (reference.externalId === flaky!.externalId && calls++ < 2) {
         throw new MercadoLibreApiError("RATE_LIMITED", 429, null);
       }
-      if (reference.externalId === broken!.externalId) throw new MercadoLibreApiError("UPSTREAM", 503);
+      if (reference.externalId === broken!.externalId)
+        throw new MercadoLibreApiError("UPSTREAM", 503);
     });
     const summary = await refreshStaleProducts({ db: ctx.db, meli, sleep, random: () => 0.5 });
     expect(summary).toMatchObject({ refreshed: 1, failed: 1 });
     expect(sleep).toHaveBeenCalledWith(250);
     const brokenRow = await ctx.db.listItem.findUniqueOrThrow({ where: { id: broken!.id } });
-    expect(brokenRow).toMatchObject({ priceMinor: 100_000n, title: "Título original", lastSyncError: "UPSTREAM", syncClaimedAt: null });
+    expect(brokenRow).toMatchObject({
+      priceMinor: 100_000n,
+      title: "Título original",
+      lastSyncError: "UPSTREAM",
+      syncClaimedAt: null,
+    });
   });
 
   it("marks items unavailable only on a confirmed 404", async () => {
@@ -140,7 +159,11 @@ describe("refreshStaleProducts", () => {
       sleep: noSleep,
     });
     const row = await ctx.db.listItem.findUniqueOrThrow({ where: { id: gone!.id } });
-    expect(row).toMatchObject({ availability: "UNAVAILABLE", lastSyncError: "NOT_FOUND", priceMinor: 100_000n });
+    expect(row).toMatchObject({
+      availability: "UNAVAILABLE",
+      lastSyncError: "NOT_FOUND",
+      priceMinor: 100_000n,
+    });
     expect(row.archivedAt).toBeNull();
   });
 

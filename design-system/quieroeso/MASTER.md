@@ -239,3 +239,8 @@ Before delivering any UI code, verify:
 - [ ] Responsive: 375px, 768px, 1024px, 1440px
 - [ ] No content hidden behind fixed navbars
 - [ ] No horizontal scroll on mobile
+
+### Form focus vs. error
+
+Focused controls use a dark border plus the red focus outline; the red border alone is
+reserved for `aria-invalid` fields, so focus is never mistaken for an error.

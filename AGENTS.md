@@ -29,17 +29,27 @@ Checkout Pro directly into the owner's account. The product spec and task plan l
 
 ```bash
 pnpm install
-pnpm env:setup               # creates .env with local secrets (mock providers on)
+pnpm env:setup               # .env with local secrets (mock providers on)
 docker compose up -d postgres
-pnpm db:migrate              # prisma migrate dev
-pnpm db:seed
+pnpm db:migrate              # prisma migrate dev (then pnpm db:generate: Prisma 7 does not auto-generate)
+pnpm db:seed                 # demo user + public demo list
 pnpm lint && pnpm typecheck && pnpm test
-pnpm test:integration        # needs TEST_DATABASE_URL (docker compose postgres)
-pnpm test:e2e                # needs the full stack: docker compose up --build
-docker compose up --build    # full local stack on http://localhost:3000
+pnpm test:integration        # real PostgreSQL (quieroeso_test)
+docker compose up --build    # full stack on http://localhost:3000 (mocks on :4010)
+pnpm test:e2e                # against the running stack
+pnpm build
+node scripts/smoke-production.mjs <url>
 ```
 
-Every command must exit 0 before a change is considered done.
+Every command must exit 0 before a change is considered done. After changing
+`schema.prisma`, run `pnpm db:generate` and restart `next dev` (it caches the client).
+
+## Local providers
+
+`apps/mock-providers` simulates Google OIDC (`/google`), Mercado Libre (`/meli`, short links
+`/meli-la/{code}`, failure ids `MLA1999999999`/`MLA1429429429`) and Mercado Pago (`/mp`, admin
+at `/mp/_admin`, test hooks under `/_admin/*` for refunds, chargebacks, resends and outages).
+It is enabled with `MOCK_PROVIDERS=true` and refused in staging/production.
 
 ## Rules
 

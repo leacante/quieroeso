@@ -53,14 +53,25 @@ export type RecordedEvent = { id: string; status: "NEW" | "RETRY" | "DUPLICATE" 
  * Persists a verified notification before acknowledging it. Already processed
  * events are duplicates; stored but unprocessed events are retried.
  */
-export async function recordWebhookEvent(db: PrismaClient, notification: WebhookNotification): Promise<RecordedEvent> {
+export async function recordWebhookEvent(
+  db: PrismaClient,
+  notification: WebhookNotification,
+): Promise<RecordedEvent> {
   const payloadHash = sha256Hex(notification.rawBody);
   const existing = await db.webhookEvent.findUnique({
-    where: { provider_providerEventId: { provider: PROVIDER, providerEventId: notification.providerEventId } },
+    where: {
+      provider_providerEventId: {
+        provider: PROVIDER,
+        providerEventId: notification.providerEventId,
+      },
+    },
   });
   if (existing) {
     if (existing.payloadHash !== payloadHash) {
-      getLogger().warn({ webhookEventId: existing.id }, "notification id reused with a different payload");
+      getLogger().warn(
+        { webhookEventId: existing.id },
+        "notification id reused with a different payload",
+      );
     }
     return { id: existing.id, status: existing.processedAt ? "DUPLICATE" : "RETRY" };
   }
@@ -91,7 +102,10 @@ export type PaymentEventDeps = {
 
 async function finish(db: PrismaClient, eventId: string, result: string): Promise<void> {
   if (!eventId) return;
-  await db.webhookEvent.update({ where: { id: eventId }, data: { processedAt: new Date(), result } });
+  await db.webhookEvent.update({
+    where: { id: eventId },
+    data: { processedAt: new Date(), result },
+  });
 }
 
 /**
@@ -101,7 +115,12 @@ async function finish(db: PrismaClient, eventId: string, result: string): Promis
  */
 export async function processPaymentEvent(
   deps: PaymentEventDeps,
-  event: { eventId: string; topic: string | null; paymentId: string | null; collectorId: string | null },
+  event: {
+    eventId: string;
+    topic: string | null;
+    paymentId: string | null;
+    collectorId: string | null;
+  },
 ): Promise<ProcessResult> {
   const logger = getLogger().child({ webhookEventId: event.eventId, paymentId: event.paymentId });
   if (event.topic !== "payment" || !event.paymentId || !/^\d{1,20}$/.test(event.paymentId)) {
@@ -111,8 +130,12 @@ export async function processPaymentEvent(
 
   const collectorId =
     event.collectorId ??
-    (await deps.db.contribution.findUnique({ where: { mpPaymentId: event.paymentId }, select: { collectorId: true } }))
-      ?.collectorId ??
+    (
+      await deps.db.contribution.findUnique({
+        where: { mpPaymentId: event.paymentId },
+        select: { collectorId: true },
+      })
+    )?.collectorId ??
     null;
   const connection = collectorId ? await deps.getAccessTokenForCollector(collectorId) : null;
   if (!connection) {
@@ -133,7 +156,11 @@ export async function processPaymentEvent(
   }
 
   const amountMatches = toMinorUnits(payment.transaction_amount) === contribution.amountMinor;
-  if (!amountMatches || payment.currency_id !== contribution.currency || payment.collector_id !== contribution.collectorId) {
+  if (
+    !amountMatches ||
+    payment.currency_id !== contribution.currency ||
+    payment.collector_id !== contribution.collectorId
+  ) {
     logger.error({ contributionId: contribution.id }, "payment does not match its contribution");
     await finish(deps.db, event.eventId, "IGNORED_MISMATCH");
     return "IGNORED";
@@ -150,7 +177,8 @@ export async function processPaymentEvent(
     const current = await tx.contribution.findUniqueOrThrow({ where: { id: contribution.id } });
     const samePayment = current.mpPaymentId === payment.id;
 
-    if (current.status === next && (samePayment || current.mpPaymentId === null)) return "DUPLICATE";
+    if (current.status === next && (samePayment || current.mpPaymentId === null))
+      return "DUPLICATE";
 
     const allowed = TRANSITIONS[current.status].includes(next);
     // A different payment may settle a not-yet-approved contribution (e.g. a pending cash
@@ -158,12 +186,16 @@ export async function processPaymentEvent(
     const paymentOk = samePayment || current.mpPaymentId === null || current.status !== "APPROVED";
     if (!allowed || !paymentOk) {
       if (next === "APPROVED" && current.status === "APPROVED" && !samePayment) {
-        logger.error({ contributionId: current.id }, "second approved payment for one contribution");
+        logger.error(
+          { contributionId: current.id },
+          "second approved payment for one contribution",
+        );
       }
       return "IGNORED";
     }
 
-    const approvedAt = next === "APPROVED" ? (current.approvedAt ?? new Date()) : current.approvedAt;
+    const approvedAt =
+      next === "APPROVED" ? (current.approvedAt ?? new Date()) : current.approvedAt;
     await tx.contribution.update({
       where: { id: current.id },
       data: {

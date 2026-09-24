@@ -53,7 +53,12 @@ type ClaimedItem = {
 };
 
 /** Atomically claims up to `limit` stale Mercado Libre items; concurrent workers skip locked rows. */
-async function claimBatch(db: PrismaClient, staleBefore: Date, limit: number, now: Date): Promise<ClaimedItem[]> {
+async function claimBatch(
+  db: PrismaClient,
+  staleBefore: Date,
+  limit: number,
+  now: Date,
+): Promise<ClaimedItem[]> {
   const claimExpiry = new Date(now.getTime() - CLAIM_TTL_MS);
   return db.$queryRaw<ClaimedItem[]>`
     UPDATE "ListItem" AS item
@@ -79,7 +84,10 @@ async function claimBatch(db: PrismaClient, staleBefore: Date, limit: number, no
 const TRANSIENT = new Set(["RATE_LIMITED", "UPSTREAM", "TIMEOUT"]);
 
 /** Fetches with exponential backoff and full jitter for 429/5xx/timeouts. */
-async function fetchWithBackoff(deps: RefreshDeps, item: ClaimedItem): Promise<ProductSnapshotInput> {
+async function fetchWithBackoff(
+  deps: RefreshDeps,
+  item: ClaimedItem,
+): Promise<ProductSnapshotInput> {
   const sleep = deps.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
   const random = deps.random ?? Math.random;
   for (let attempt = 1; ; attempt++) {
@@ -90,7 +98,11 @@ async function fetchWithBackoff(deps: RefreshDeps, item: ClaimedItem): Promise<P
         canonicalUrl: item.sourceUrl ?? "",
       });
     } catch (error) {
-      if (!(error instanceof MercadoLibreApiError) || !TRANSIENT.has(error.kind) || attempt >= MAX_ATTEMPTS) {
+      if (
+        !(error instanceof MercadoLibreApiError) ||
+        !TRANSIENT.has(error.kind) ||
+        attempt >= MAX_ATTEMPTS
+      ) {
         throw error;
       }
       const base = 500 * 2 ** (attempt - 1);
@@ -102,7 +114,12 @@ async function fetchWithBackoff(deps: RefreshDeps, item: ClaimedItem): Promise<P
 
 type PreviousSnapshot = { title?: unknown; imageUrl?: unknown };
 
-async function applySnapshot(db: PrismaClient, item: ClaimedItem, snapshot: ProductSnapshotInput, now: Date) {
+async function applySnapshot(
+  db: PrismaClient,
+  item: ClaimedItem,
+  snapshot: ProductSnapshotInput,
+  now: Date,
+) {
   const previous = (item.sourceSnapshot ?? {}) as PreviousSnapshot;
   // Presentation fields follow the source only while the owner has not customized them.
   const titleFollowsSource = previous.title === undefined || previous.title === item.title;
@@ -122,7 +139,11 @@ async function applySnapshot(db: PrismaClient, item: ClaimedItem, snapshot: Prod
   });
 }
 
-async function runPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void> {
+async function runPool<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
   let next = 0;
   const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
     while (next < items.length) {
@@ -139,7 +160,10 @@ async function runPool<T>(items: T[], concurrency: number, worker: (item: T) => 
  * sanitized `lastSyncError`; items become UNAVAILABLE only on a confirmed 404 or
  * inactive status. Throws SystemicRefreshError when credentials are rejected.
  */
-export async function refreshStaleProducts(deps: RefreshDeps, options: RefreshOptions = {}): Promise<RefreshSummary> {
+export async function refreshStaleProducts(
+  deps: RefreshDeps,
+  options: RefreshOptions = {},
+): Promise<RefreshSummary> {
   const now = deps.now?.() ?? new Date();
   const batchSize = options.batchSize ?? 50;
   const concurrency = options.concurrency ?? 5;
@@ -164,7 +188,12 @@ export async function refreshStaleProducts(deps: RefreshDeps, options: RefreshOp
         if (error instanceof MercadoLibreApiError && error.kind === "NOT_FOUND") {
           await deps.db.listItem.update({
             where: { id: item.id },
-            data: { availability: "UNAVAILABLE", lastSyncedAt: now, lastSyncError: "NOT_FOUND", syncClaimedAt: null },
+            data: {
+              availability: "UNAVAILABLE",
+              lastSyncedAt: now,
+              lastSyncError: "NOT_FOUND",
+              syncClaimedAt: null,
+            },
           });
           summary.unavailable++;
           return;

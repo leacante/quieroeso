@@ -7,7 +7,7 @@ import type {
 } from "react";
 
 const control =
-  "block w-full rounded-xl border-2 border-border-strong bg-card px-4 py-3 text-base text-foreground placeholder:text-muted-foreground transition-colors duration-200 focus:border-ring focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-ring aria-invalid:border-destructive disabled:opacity-60";
+  "block w-full rounded-xl border-2 border-border-strong bg-card px-4 py-3 text-base text-foreground placeholder:text-muted-foreground transition-colors duration-200 focus:border-foreground focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-ring aria-invalid:border-destructive disabled:opacity-60";
 
 type FieldShellProps = {
   id: string;

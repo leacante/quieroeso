@@ -16,15 +16,26 @@ export async function connectMercadoPago(page: Page) {
  */
 export async function createFundableList(
   page: Page,
-  options: { title?: string; items: { title: string; priceMinor: string }[]; visibility?: "PUBLIC" | "UNLISTED"; perItem?: boolean },
+  options: {
+    title?: string;
+    items: { title: string; priceMinor: string }[];
+    visibility?: "PUBLIC" | "UNLISTED";
+    perItem?: boolean;
+  },
 ) {
   const headers = origin(page);
   const { list } = await (
-    await page.request.post("/api/lists", { data: { title: options.title ?? "Lista con aportes" }, headers })
+    await page.request.post("/api/lists", {
+      data: { title: options.title ?? "Lista con aportes" },
+      headers,
+    })
   ).json();
   const items: { id: string; feeRateBps: number }[] = [];
   for (const item of options.items) {
-    const response = await page.request.post(`/api/lists/${list.id}/items`, { data: item, headers });
+    const response = await page.request.post(`/api/lists/${list.id}/items`, {
+      data: item,
+      headers,
+    });
     items.push((await response.json()).item);
   }
   const published = await (
@@ -34,7 +45,10 @@ export async function createFundableList(
     })
   ).json();
   if (options.perItem !== false) {
-    const mode = await page.request.patch(`/api/lists/${list.id}`, { data: { fundingMode: "PER_ITEM" }, headers });
+    const mode = await page.request.patch(`/api/lists/${list.id}`, {
+      data: { fundingMode: "PER_ITEM" },
+      headers,
+    });
     expect(mode.status()).toBe(200);
   }
   const url: string = published.shareUrl ?? published.list.publicUrl;

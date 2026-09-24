@@ -1,0 +1,19 @@
+{
+  "id": "MLA20000002",
+  "status": "active",
+  "domain_id": "MLA-TELEVISIONS",
+  "permalink": "https://www.mercadolibre.com.ar/smart-tv-samsung-50-crystal-uhd-4k/p/MLA20000002",
+  "name": "Smart TV Samsung 50 Crystal UHD 4K",
+  "pictures": [
+    {
+      "id": "800000-MLA00000000003_012026",
+      "url": "https://http2.mlstatic.com/D_NQ_NP_800000-MLA00000000003_012026-F.jpg"
+    }
+  ],
+  "buy_box_winner": {
+    "item_id": "MLA1999999998",
+    "price": 699999,
+    "currency_id": "ARS",
+    "seller_id": 987654321
+  }
+}

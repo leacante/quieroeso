@@ -1,0 +1,29 @@
+{
+  "id": "MLA1234567890",
+  "site_id": "MLA",
+  "title": "Cafetera Express Oster 15 Bares Acero Inoxidable ",
+  "seller_id": 123456789,
+  "category_id": "MLA1583",
+  "price": 189999.99,
+  "base_price": 189999.99,
+  "original_price": null,
+  "currency_id": "ARS",
+  "initial_quantity": 50,
+  "available_quantity": 12,
+  "condition": "new",
+  "permalink": "https://articulo.mercadolibre.com.ar/MLA-1234567890-cafetera-express-oster-15-bares-_JM",
+  "thumbnail_id": "600000-MLA00000000001_012026",
+  "thumbnail": "http://http2.mlstatic.com/D_600000-MLA00000000001_012026-I.jpg",
+  "pictures": [
+    {
+      "id": "600000-MLA00000000001_012026",
+      "url": "http://http2.mlstatic.com/D_600000-MLA00000000001_012026-O.jpg",
+      "secure_url": "https://http2.mlstatic.com/D_600000-MLA00000000001_012026-O.jpg",
+      "size": "500x500",
+      "max_size": "1200x1200"
+    }
+  ],
+  "status": "active",
+  "catalog_product_id": null,
+  "domain_id": "MLA-COFFEE_MAKERS"
+}

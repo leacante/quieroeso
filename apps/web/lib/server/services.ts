@@ -1,7 +1,13 @@
 import "server-only";
 
 import { getPrisma } from "@quieroeso/db";
-import type { ConnectionDeps, ImportDeps, ListDeps } from "@quieroeso/domain";
+import {
+  getActiveAccessToken,
+  type ConnectionDeps,
+  type ContributionDeps,
+  type ImportDeps,
+  type ListDeps,
+} from "@quieroeso/domain";
 import { createTokenVault, type TokenVault } from "@quieroeso/integrations/crypto";
 import {
   createMercadoLibreClient,
@@ -9,7 +15,11 @@ import {
   guardedHopFetcher,
   type MercadoLibreGateway,
 } from "@quieroeso/integrations/mercadolibre";
-import { exchangeAuthorizationCode, refreshAccessToken } from "@quieroeso/integrations/mercadopago";
+import {
+  createPreference,
+  exchangeAuthorizationCode,
+  refreshAccessToken,
+} from "@quieroeso/integrations/mercadopago";
 import { getEnv } from "./env";
 
 /** Credentials accepted by apps/mock-providers. Only used when MOCK_PROVIDERS=true. */
@@ -98,6 +108,24 @@ export function getConnectionDeps(): ConnectionDeps {
       authBaseUrl: config.authBaseUrl,
       clientId: config.clientId,
       redirectUri: config.redirectUri,
+    },
+  };
+}
+
+export function getContributionDeps(): ContributionDeps {
+  const env = getEnv();
+  const mp = getMercadoPagoConfig();
+  const connection = getConnectionDeps();
+  return {
+    db: getPrisma(),
+    getOwnerAccessToken: (ownerId) => getActiveAccessToken(connection, ownerId),
+    createPreference: (accessToken, input, key) =>
+      createPreference({ apiBaseUrl: mp.apiBaseUrl }, accessToken, input, key),
+    config: {
+      minContributionMinor: env.MIN_CONTRIBUTION_MINOR,
+      appUrl: env.APP_URL,
+      notificationUrl: mp.notificationUrl,
+      checkoutHosts: mp.checkoutHosts,
     },
   };
 }

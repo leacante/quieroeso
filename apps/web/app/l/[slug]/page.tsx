@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { contributionAction } from "@/components/public-list/contribution-action";
 import { PublicListPage } from "@/components/public-list/public-list-view";
 import { buildItemListJsonLd, jsonLdScript, listDescription } from "@/lib/public-metadata";
 import { loadPublicList } from "@/lib/server/public-lists";
@@ -34,7 +35,11 @@ export default async function PublicListRoute({ params }: PageProps<"/l/[slug]">
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(buildItemListJsonLd(list, url)) }}
       />
-      <PublicListPage list={list} shareUrl={url} />
+      <PublicListPage
+        list={list}
+        shareUrl={url}
+        renderAction={contributionAction(list, { type: "public", slug: list.slug })}
+      />
     </>
   );
 }

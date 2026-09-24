@@ -11,7 +11,7 @@ export function PublicListPage({
 }: {
   list: PublicListView;
   shareUrl: string;
-  renderAction?: (itemId: string, itemTitle: string) => ReactNode;
+  renderAction?: (itemId: string) => ReactNode;
 }) {
   return (
     <main id="contenido" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:py-12">
@@ -52,7 +52,7 @@ export function PublicListPage({
                 <PublicItemCard
                   item={item}
                   acceptsContributions={list.acceptsContributions}
-                  action={renderAction?.(item.id, item.title)}
+                  action={renderAction?.(item.id)}
                   priority={index < 3}
                 />
               </li>

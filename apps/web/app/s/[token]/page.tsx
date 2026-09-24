@@ -1,5 +1,6 @@
 import type { Metadata, Route } from "next";
 import { notFound, redirect } from "next/navigation";
+import { contributionAction } from "@/components/public-list/contribution-action";
 import { PublicListPage } from "@/components/public-list/public-list-view";
 import { listDescription } from "@/lib/public-metadata";
 import { loadSharedList } from "@/lib/server/public-lists";
@@ -34,5 +35,11 @@ export default async function SharedListRoute({ params }: PageProps<"/s/[token]"
   const list = await loadSharedList(token);
   if (!list) notFound();
   if (list.visibility === "PUBLIC") redirect(`/l/${list.slug}` as Route);
-  return <PublicListPage list={list} shareUrl={absoluteUrl(`/s/${token}`)} />;
+  return (
+    <PublicListPage
+      list={list}
+      shareUrl={absoluteUrl(`/s/${token}`)}
+      renderAction={contributionAction(list, { type: "shared", token })}
+    />
+  );
 }

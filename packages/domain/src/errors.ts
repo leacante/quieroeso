@@ -9,6 +9,8 @@ export type DomainErrorCode =
   | "PAYLOAD_TOO_LARGE"
   | "UPSTREAM_UNAVAILABLE"
   | "UNSUPPORTED_URL"
+  /** Mercado Libre refuses to share the product with our application. */
+  | "SOURCE_FORBIDDEN"
   | "MERCADOPAGO_NOT_CONNECTED";
 
 const STATUS_BY_CODE: Record<DomainErrorCode, number> = {
@@ -22,6 +24,7 @@ const STATUS_BY_CODE: Record<DomainErrorCode, number> = {
   PAYLOAD_TOO_LARGE: 413,
   UPSTREAM_UNAVAILABLE: 503,
   UNSUPPORTED_URL: 422,
+  SOURCE_FORBIDDEN: 422,
   MERCADOPAGO_NOT_CONNECTED: 409,
 };
 

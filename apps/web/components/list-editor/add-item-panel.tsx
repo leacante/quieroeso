@@ -4,6 +4,7 @@ import { Alert, Button, Card, TextAreaField, TextField, cn } from "@quieroeso/ui
 import { Link2, PencilLine, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { BookmarkletHelp } from "@/components/capture/bookmarklet-link";
 import { ApiError, apiRequest } from "@/lib/client/api";
 import { parseMoneyInput } from "@/lib/format";
 
@@ -16,18 +17,22 @@ export function AddItemPanel({ listId }: { listId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState<string | null>(null);
+  /** Mercado Libre refused the link: point to the bookmarklet. */
+  const [forbidden, setForbidden] = useState(false);
 
   async function run(action: () => Promise<{ item: { title: string } }>, form: HTMLFormElement) {
     setPending(true);
     setError(null);
     setFields({});
     setSuccess(null);
+    setForbidden(false);
     try {
       const { item } = await action();
       form.reset();
       setSuccess(`Agregamos "${item.title}".`);
       router.refresh();
     } catch (caught) {
+      setForbidden(caught instanceof ApiError && caught.code === "SOURCE_FORBIDDEN");
       if (caught instanceof ApiError && Object.keys(caught.fields).length > 0)
         setFields(caught.fields);
       else
@@ -137,6 +142,20 @@ export function AddItemPanel({ listId }: { listId: string }) {
               Agregar producto
             </Button>
           </div>
+          {forbidden ? (
+            <div className="rounded-xl border-2 border-warning-foreground bg-warning-soft p-4">
+              <BookmarkletHelp />
+            </div>
+          ) : (
+            <details className="text-sm">
+              <summary className="cursor-pointer font-semibold">
+                ¿Mercado Libre no deja agregar un producto?
+              </summary>
+              <div className="pt-2">
+                <BookmarkletHelp />
+              </div>
+            </details>
+          )}
         </form>
       ) : (
         <form

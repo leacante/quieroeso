@@ -28,6 +28,14 @@ export type ImportItemInput = z.infer<typeof importItemSchema>;
 
 const UNSUPPORTED_DETAIL =
   "Pegá un enlace de un producto de mercadolibre.com.ar o un enlace corto meli.la.";
+const FORBIDDEN_DETAIL =
+  "Mercado Libre no nos deja leer esta publicación. Guardala con el botón «Guardar en QuieroEso» desde la página del producto, o cargala a mano.";
+
+function sourceForbidden(): DomainError {
+  return new DomainError("SOURCE_FORBIDDEN", FORBIDDEN_DETAIL, {
+    fields: { url: FORBIDDEN_DETAIL },
+  });
+}
 
 /** Serializable form of a snapshot, stored in `ListItem.sourceSnapshot`. */
 export function snapshotToJson(snapshot: ProductSnapshotInput, fetchedAt: Date) {
@@ -47,6 +55,9 @@ async function resolveReference(deps: ImportDeps, url: string): Promise<MercadoL
     const { type: _type, ...reference } = parsed;
     return reference;
   } catch (error) {
+    if (error instanceof UnsupportedUrlError && error.reason === "USER_PRODUCT_ONLY") {
+      throw sourceForbidden();
+    }
     if (error instanceof UnsupportedUrlError || error instanceof ShortLinkError) {
       throw new DomainError("UNSUPPORTED_URL", UNSUPPORTED_DETAIL, {
         fields: { url: UNSUPPORTED_DETAIL },
@@ -64,6 +75,8 @@ async function fetchSnapshot(deps: ImportDeps, reference: MercadoLibreReference)
       if (error.kind === "NOT_FOUND") {
         throw new DomainError("NOT_FOUND", "No encontramos esa publicación en Mercado Libre.");
       }
+      // 403 is a per-listing policy (other sellers' listings); retrying never helps.
+      if (error.kind === "UNAUTHORIZED" && error.status === 403) throw sourceForbidden();
       throw new DomainError(
         "UPSTREAM_UNAVAILABLE",
         "Mercado Libre no responde en este momento. Probá de nuevo en unos minutos.",

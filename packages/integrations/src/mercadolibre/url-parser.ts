@@ -15,7 +15,14 @@ export type ParsedMercadoLibreUrl =
   ({ type: "REFERENCE" } & MercadoLibreReference) | { type: "SHORT_LINK"; url: URL };
 
 export type UnsupportedUrlReason =
-  "INVALID_URL" | "NOT_HTTPS" | "CREDENTIALS" | "PORT" | "HOST_NOT_ALLOWED" | "NO_PRODUCT_ID";
+  | "INVALID_URL"
+  | "NOT_HTTPS"
+  | "CREDENTIALS"
+  | "PORT"
+  | "HOST_NOT_ALLOWED"
+  | "NO_PRODUCT_ID"
+  /** `/up/MLAU…` link without a listing id: the API exposes nothing readable for it. */
+  | "USER_PRODUCT_ONLY";
 
 export class UnsupportedUrlError extends Error {
   constructor(readonly reason: UnsupportedUrlReason) {
@@ -31,6 +38,9 @@ const MAX_INPUT_LENGTH = 2048;
 const ITEM_IN_PATH = /(?:^|\/)MLA-?(\d{6,15})(?=[-_/]|$)/i;
 const CATALOG_IN_PATH = /\/p\/MLA(\d{4,15})(?=[/?#]|$)/i;
 const ITEM_ID_PARAM = /^MLA-?(\d{6,15})$/i;
+const USER_PRODUCT_IN_PATH = /\/up\/MLAU\d{4,15}(?=[/?#]|$)/i;
+/** `pdp_filters=item_id:MLA123,...` on user product pages. */
+const ITEM_IN_PDP_FILTERS = /(?:^|[,|])item_id:MLA-?(\d{6,15})(?=[,|]|$)/i;
 
 function normalizeHost(hostname: string): string {
   return hostname.toLowerCase().replace(/\.$/, "");
@@ -53,6 +63,8 @@ function itemFromParams(url: URL): string | null {
     const match = ITEM_ID_PARAM.exec(url.searchParams.get(key) ?? "");
     if (match?.[1]) return match[1];
   }
+  const filtered = ITEM_IN_PDP_FILTERS.exec(url.searchParams.get("pdp_filters") ?? "");
+  if (filtered?.[1]) return filtered[1];
   const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
   const fromHash = ITEM_ID_PARAM.exec(hashParams.get("wid") ?? "");
   return fromHash?.[1] ?? null;
@@ -97,7 +109,11 @@ export function parseMercadoLibreUrl(input: string): ParsedMercadoLibreUrl {
   }
 
   const itemDigits = listingInCatalog ?? ITEM_IN_PATH.exec(path)?.[1] ?? itemFromParams(url);
-  if (!itemDigits) throw new UnsupportedUrlError("NO_PRODUCT_ID");
+  if (!itemDigits) {
+    throw new UnsupportedUrlError(
+      USER_PRODUCT_IN_PATH.test(path) ? "USER_PRODUCT_ONLY" : "NO_PRODUCT_ID",
+    );
+  }
   return {
     type: "REFERENCE",
     kind: "ITEM",

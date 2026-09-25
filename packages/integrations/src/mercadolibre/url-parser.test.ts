@@ -48,6 +48,27 @@ describe("parseMercadoLibreUrl — accepted links", () => {
     ).toMatchObject({ externalId: "MLA1234567890" });
   });
 
+  it("reads the listing of a user product link from pdp_filters", () => {
+    expect(
+      parseMercadoLibreUrl(
+        "https://www.mercadolibre.com.ar/aplique-techo-barral-slim-spot-5-luces-dicroica-led-incluida/up/MLAU3914430684?pdp_filters=item_id%3AMLA3202924364&sid=bookmarks",
+      ),
+    ).toEqual({
+      type: "REFERENCE",
+      kind: "ITEM",
+      externalId: "MLA3202924364",
+      canonicalUrl: "https://articulo.mercadolibre.com.ar/MLA-3202924364",
+    });
+  });
+
+  it("reads the listing of a user product link from the wid in the fragment", () => {
+    expect(
+      parseMercadoLibreUrl(
+        "https://www.mercadolibre.com.ar/aplique/up/MLAU3914430684#polycard_client=bookmark&wid=MLA3202924364",
+      ),
+    ).toMatchObject({ kind: "ITEM", externalId: "MLA3202924364" });
+  });
+
   it("recognizes meli.la short links without fetching them", () => {
     const parsed = parseMercadoLibreUrl("https://meli.la/2AbCdEf");
     expect(parsed.type).toBe("SHORT_LINK");
@@ -71,6 +92,11 @@ describe("parseMercadoLibreUrl — rejected links", () => {
     ["https://169.254.169.254/latest/meta-data", "HOST_NOT_ALLOWED"],
     ["https://10.0.0.5/MLA-1234567890", "HOST_NOT_ALLOWED"],
     ["https://www.mercadolibre.com.ar/ofertas", "NO_PRODUCT_ID"],
+    ["https://www.mercadolibre.com.ar/aplique/up/MLAU3914430684", "USER_PRODUCT_ONLY"],
+    [
+      "https://www.mercadolibre.com.ar/aplique/up/MLAU3914430684?pdp_filters=item_id%3AMLB3202924364",
+      "USER_PRODUCT_ONLY",
+    ],
     ["https://meli.la/", "NO_PRODUCT_ID"],
     ["not a url", "INVALID_URL"],
     ["", "INVALID_URL"],

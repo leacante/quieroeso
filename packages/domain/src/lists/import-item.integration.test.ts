@@ -15,6 +15,9 @@ const ctx = useTestDatabase();
 const gateway: MercadoLibreGateway = {
   fetchSnapshot: vi.fn(async (reference) => {
     if (reference.externalId === "MLA1999999999") throw new MercadoLibreApiError("NOT_FOUND", 404);
+    if (reference.externalId === "MLA1403403403") {
+      throw new MercadoLibreApiError("UNAUTHORIZED", 403);
+    }
     if (reference.externalId === "MLA1429429429") {
       throw new MercadoLibreApiError("RATE_LIMITED", 429, 12);
     }
@@ -104,6 +107,19 @@ describe("importListItem", () => {
     );
     expect(limited.code).toBe("UPSTREAM_UNAVAILABLE");
     expect(limited.extra.retryAfterSeconds).toBe(12);
+
+    const forbidden = await errorOf(
+      importListItem(deps(), ref, { url: "https://articulo.mercadolibre.com.ar/MLA-1403403403-x" }),
+    );
+    expect(forbidden.code).toBe("SOURCE_FORBIDDEN");
+    expect(forbidden.extra.fields?.url).toMatch(/Guardar en QuieroEso/);
+
+    const userProduct = await errorOf(
+      importListItem(deps(), ref, {
+        url: "https://www.mercadolibre.com.ar/aplique/up/MLAU3914430684",
+      }),
+    );
+    expect(userProduct.code).toBe("SOURCE_FORBIDDEN");
   });
 
   it("refuses duplicates in the same list", async () => {

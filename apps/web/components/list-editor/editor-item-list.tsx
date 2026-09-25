@@ -9,9 +9,11 @@ import { EditorItemCard, type EditorItem } from "./editor-item-card";
 export function EditorItemList({
   listId,
   items: initialItems,
+  acceptsContributions,
 }: {
   listId: string;
   items: EditorItem[];
+  acceptsContributions: boolean;
 }) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
@@ -74,6 +76,7 @@ export function EditorItemList({
               total={items.length}
               onMove={move}
               moving={moving}
+              acceptsContributions={acceptsContributions}
             />
           </li>
         ))}

@@ -96,6 +96,28 @@ describe("refreshStaleProducts", () => {
     });
   });
 
+  it("adopts the first known price as target only for items imported without one", async () => {
+    const [unpriced, cleared] = await seedItems(2, 13);
+    await ctx.db.listItem.update({
+      where: { id: unpriced!.id },
+      data: {
+        priceMinor: null,
+        targetAmountMinor: null,
+        sourceSnapshot: { title: "Título original", priceMinor: null },
+      },
+    });
+    await ctx.db.listItem.update({
+      where: { id: cleared!.id },
+      data: { targetAmountMinor: null },
+    });
+    await refreshStaleProducts({ db: ctx.db, meli: gateway(), sleep: noSleep });
+
+    const adopted = await ctx.db.listItem.findUniqueOrThrow({ where: { id: unpriced!.id } });
+    expect(adopted).toMatchObject({ priceMinor: 120_000n, targetAmountMinor: 120_000n });
+    const kept = await ctx.db.listItem.findUniqueOrThrow({ where: { id: cleared!.id } });
+    expect(kept).toMatchObject({ priceMinor: 120_000n, targetAmountMinor: null });
+  });
+
   it("processes batches of 50 with at most 5 concurrent requests", async () => {
     await seedItems(60, 20);
     let inFlight = 0;

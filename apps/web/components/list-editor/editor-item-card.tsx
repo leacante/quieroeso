@@ -28,6 +28,7 @@ export function EditorItemCard({
   total,
   onMove,
   moving,
+  acceptsContributions,
 }: {
   listId: string;
   item: EditorItem;
@@ -35,6 +36,8 @@ export function EditorItemCard({
   total: number;
   onMove: (index: number, direction: -1 | 1) => void;
   moving: boolean;
+  /** Warns about items that cannot receive contributions yet. */
+  acceptsContributions: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -183,6 +186,12 @@ export function EditorItemCard({
                 </div>
               ) : null}
             </dl>
+            {acceptsContributions && !target ? (
+              <Alert tone="warning">
+                Sin objetivo de aportes: nadie puede aportar para este producto. Editalo y
+                cargá cuánto querés juntar.
+              </Alert>
+            ) : null}
             {item.notes ? <p className="text-sm">{item.notes}</p> : null}
             {item.sourceUrl ? (
               <a

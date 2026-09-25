@@ -92,6 +92,57 @@ describe("Mercado Libre client (recorded fixtures)", () => {
     });
   });
 
+  const catalogRef = {
+    kind: "CATALOG_PRODUCT" as const,
+    externalId: "MLA20000002",
+    canonicalUrl: "https://www.mercadolibre.com.ar/p/MLA20000002",
+  };
+  const withoutWinner = (extra: Record<string, unknown> = {}) => {
+    const product = JSON.parse(fixture("product-catalog")) as Record<string, unknown>;
+    return JSON.stringify({ ...product, buy_box_winner: null, ...extra });
+  };
+
+  it("uses the cheapest offer when the catalog product has no buy box winner", async () => {
+    const { meli, calls } = client({
+      "GET /products/MLA20000002": () =>
+        json(
+          withoutWinner({
+            buy_box_winner_price_range: { min: { price: 650000, currency_id: "ARS" } },
+          }),
+        ),
+    });
+    const snapshot = await meli.fetchSnapshot(catalogRef);
+    expect(snapshot.priceMinor).toBe(65_000_000n);
+    expect(calls.some((call) => call.url.endsWith("/items"))).toBe(false);
+  });
+
+  it("prices a catalog product from its lowest ARS listing as a last resort", async () => {
+    const { meli } = client({
+      "GET /products/MLA20000002": () => json(withoutWinner()),
+      "GET /products/MLA20000002/items": () =>
+        json(
+          JSON.stringify({
+            results: [
+              { item_id: "MLA1", price: 720000, currency_id: "ARS" },
+              { item_id: "MLA2", price: 500, currency_id: "USD" },
+              { item_id: "MLA3", price: 689999.5, currency_id: "ARS" },
+            ],
+          }),
+        ),
+    });
+    const snapshot = await meli.fetchSnapshot(catalogRef);
+    expect(snapshot.priceMinor).toBe(68_999_950n);
+  });
+
+  it("keeps the catalog snapshot without a price when listings are unavailable", async () => {
+    const { meli } = client({
+      "GET /products/MLA20000002": () => json(withoutWinner()),
+      "GET /products/MLA20000002/items": () => json('{"error":"forbidden"}', 403),
+    });
+    const snapshot = await meli.fetchSnapshot(catalogRef);
+    expect(snapshot).toMatchObject({ title: "Smart TV Samsung 50 Crystal UHD 4K", priceMinor: null });
+  });
+
   it("falls back to the catalog product when the item is 403 to the app token", async () => {
     const { meli, calls } = client({
       "GET /items/MLA1234567890": () => json('{"error":"access_denied"}', 403),

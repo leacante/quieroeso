@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { getLogger, type Logger } from "@quieroeso/observability";
-import { mapCatalogProduct, mapItem, type ProductSnapshotInput } from "./mapper";
+import {
+  lowestListingPrice,
+  mapCatalogProduct,
+  mapItem,
+  type ProductSnapshotInput,
+} from "./mapper";
 import type { MercadoLibreReference } from "./url-parser";
 
 export type MercadoLibreErrorKind =
@@ -123,11 +128,32 @@ export function createMercadoLibreClient(options: MercadoLibreClientOptions): Me
     throw new MercadoLibreApiError("UNAUTHORIZED", 401);
   }
 
+  /**
+   * Catalog pages without a buy box winner carry no price; the listings competing for the
+   * page still do. Best effort: a failure here keeps the snapshot without a price.
+   */
+  async function fetchCatalogProduct(
+    productId: string,
+    canonicalUrl: string,
+  ): Promise<ProductSnapshotInput> {
+    const id = encodeURIComponent(productId);
+    const snapshot = mapCatalogProduct(await getJson(`/products/${id}`), canonicalUrl);
+    if (snapshot.priceMinor !== null) return snapshot;
+    try {
+      const priceMinor = lowestListingPrice(await getJson(`/products/${id}/items`));
+      return priceMinor === null ? snapshot : { ...snapshot, priceMinor };
+    } catch (error) {
+      const kind = error instanceof MercadoLibreApiError ? error.kind : "MALFORMED";
+      logger.warn({ productId, kind }, "meli catalog listings unavailable");
+      return snapshot;
+    }
+  }
+
   return {
     async fetchSnapshot(reference) {
       const id = encodeURIComponent(reference.externalId);
       if (reference.kind === "CATALOG_PRODUCT") {
-        return mapCatalogProduct(await getJson(`/products/${id}`), reference.canonicalUrl);
+        return fetchCatalogProduct(reference.externalId, reference.canonicalUrl);
       }
       try {
         return mapItem(await getJson(`/items/${id}`), reference.canonicalUrl);
@@ -139,8 +165,7 @@ export function createMercadoLibreClient(options: MercadoLibreClientOptions): Me
           error.kind === "UNAUTHORIZED" &&
           reference.fallbackCatalogProductId
         ) {
-          const catalogId = encodeURIComponent(reference.fallbackCatalogProductId);
-          return mapCatalogProduct(await getJson(`/products/${catalogId}`), reference.canonicalUrl);
+          return fetchCatalogProduct(reference.fallbackCatalogProductId, reference.canonicalUrl);
         }
         throw error;
       }

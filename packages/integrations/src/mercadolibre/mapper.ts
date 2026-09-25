@@ -38,6 +38,24 @@ export const productResponseSchema = z.object({
     .object({ price: z.number().nonnegative(), currency_id: z.string() })
     .nullable()
     .optional(),
+  buy_box_winner_price_range: z
+    .object({
+      min: z.object({ price: z.number().nonnegative(), currency_id: z.string() }).nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+/** Listings competing for a catalog product (`/products/{id}/items`). */
+export const productItemsResponseSchema = z.object({
+  results: z
+    .array(
+      z.object({
+        price: z.number().nonnegative().nullable().optional(),
+        currency_id: z.string().nullable().optional(),
+      }),
+    )
+    .default([]),
 });
 
 /** Mercado Libre CDN images are served over https even when the API says http. */
@@ -85,6 +103,10 @@ export function mapItem(raw: unknown, canonicalUrl: string): ProductSnapshotInpu
 export function mapCatalogProduct(raw: unknown, canonicalUrl: string): ProductSnapshotInput {
   const product = productResponseSchema.parse(raw);
   const winner = product.buy_box_winner ?? null;
+  // Without a buy box winner the page can still list offers; the cheapest one is the best
+  // reference price we have.
+  const cheapest = product.buy_box_winner_price_range?.min ?? null;
+  const fallbackPrice = cheapest ? price(cheapest.price, cheapest.currency_id) : null;
   const firstPicture = product.pictures?.[0];
   return {
     externalId: product.id,
@@ -92,8 +114,19 @@ export function mapCatalogProduct(raw: unknown, canonicalUrl: string): ProductSn
     canonicalUrl,
     title: product.name.trim(),
     imageUrl: normalizeImage(firstPicture?.secure_url ?? firstPicture?.url),
-    priceMinor: winner ? price(winner.price, winner.currency_id) : null,
+    priceMinor: winner ? price(winner.price, winner.currency_id) : fallbackPrice,
     currency: "ARS",
     availability: product.status !== "active" ? "UNAVAILABLE" : winner ? "AVAILABLE" : "UNKNOWN",
   };
+}
+
+/** Lowest ARS price among the listings of a catalog product, or null when there is none. */
+export function lowestListingPrice(raw: unknown): bigint | null {
+  const { results } = productItemsResponseSchema.parse(raw);
+  let lowest: bigint | null = null;
+  for (const listing of results) {
+    const candidate = price(listing.price, listing.currency_id);
+    if (candidate !== null && (lowest === null || candidate < lowest)) lowest = candidate;
+  }
+  return lowest;
 }

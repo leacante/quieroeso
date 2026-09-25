@@ -49,6 +49,7 @@ type ClaimedItem = {
   sourceUrl: string | null;
   title: string;
   imageUrl: string | null;
+  targetAmountMinor: bigint | null;
   sourceSnapshot: Prisma.JsonValue;
 };
 
@@ -78,7 +79,8 @@ async function claimBatch(
       FOR UPDATE OF candidate SKIP LOCKED
     )
     RETURNING item."id", item."externalId", item."externalKind", item."sourceUrl",
-              item."title", item."imageUrl", item."sourceSnapshot"`;
+              item."title", item."imageUrl", item."targetAmountMinor",
+              item."sourceSnapshot"`;
 }
 
 const TRANSIENT = new Set(["RATE_LIMITED", "UPSTREAM", "TIMEOUT"]);
@@ -112,7 +114,7 @@ async function fetchWithBackoff(
   }
 }
 
-type PreviousSnapshot = { title?: unknown; imageUrl?: unknown };
+type PreviousSnapshot = { title?: unknown; imageUrl?: unknown; priceMinor?: unknown };
 
 async function applySnapshot(
   db: PrismaClient,
@@ -124,6 +126,12 @@ async function applySnapshot(
   // Presentation fields follow the source only while the owner has not customized them.
   const titleFollowsSource = previous.title === undefined || previous.title === item.title;
   const imageFollowsSource = previous.imageUrl === undefined || previous.imageUrl === item.imageUrl;
+  // Imports default the target to the price. Items imported without a price never got one,
+  // so they adopt the first price that shows up; a target the owner cleared stays cleared.
+  const adoptsPriceAsTarget =
+    item.targetAmountMinor === null &&
+    (previous.priceMinor === null || previous.priceMinor === undefined) &&
+    snapshot.priceMinor !== null;
   await db.listItem.update({
     where: { id: item.id },
     data: {
@@ -135,6 +143,7 @@ async function applySnapshot(
       syncClaimedAt: null,
       ...(titleFollowsSource ? { title: snapshot.title } : {}),
       ...(imageFollowsSource ? { imageUrl: snapshot.imageUrl } : {}),
+      ...(adoptsPriceAsTarget ? { targetAmountMinor: snapshot.priceMinor } : {}),
     },
   });
 }

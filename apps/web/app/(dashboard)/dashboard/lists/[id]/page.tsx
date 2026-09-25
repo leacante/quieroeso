@@ -108,7 +108,11 @@ export default async function EditListPage({ params }: PageProps<"/dashboard/lis
             <h2 id="items-heading" className="text-2xl font-bold">
               Productos <span className="text-muted-foreground">({items.length})</span>
             </h2>
-            <EditorItemList listId={list.id} items={items} />
+            <EditorItemList
+              listId={list.id}
+              items={items}
+              acceptsContributions={list.fundingMode === "PER_ITEM"}
+            />
           </section>
         </div>
         <aside className="flex flex-col gap-6" aria-label="Configuración de la lista">

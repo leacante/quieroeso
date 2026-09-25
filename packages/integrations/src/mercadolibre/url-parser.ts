@@ -4,6 +4,11 @@ export type MercadoLibreReference = {
   externalId: string;
   /** Canonical, tracking-free URL we store and link to. */
   canonicalUrl: string;
+  /**
+   * Catalog product to fall back to when `kind` is ITEM and Mercado Libre refuses to
+   * return the specific listing to an application-only token (403 on /items/{id}).
+   */
+  fallbackCatalogProductId?: string;
 };
 
 export type ParsedMercadoLibreUrl =
@@ -98,5 +103,6 @@ export function parseMercadoLibreUrl(input: string): ParsedMercadoLibreUrl {
     kind: "ITEM",
     externalId: `MLA${itemDigits}`,
     canonicalUrl: `https://articulo.${MAIN_DOMAIN}/MLA-${itemDigits}`,
+    ...(listingInCatalog && catalog?.[1] ? { fallbackCatalogProductId: `MLA${catalog[1]}` } : {}),
   };
 }

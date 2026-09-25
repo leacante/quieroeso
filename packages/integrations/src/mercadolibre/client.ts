@@ -129,7 +129,21 @@ export function createMercadoLibreClient(options: MercadoLibreClientOptions): Me
       if (reference.kind === "CATALOG_PRODUCT") {
         return mapCatalogProduct(await getJson(`/products/${id}`), reference.canonicalUrl);
       }
-      return mapItem(await getJson(`/items/${id}`), reference.canonicalUrl);
+      try {
+        return mapItem(await getJson(`/items/${id}`), reference.canonicalUrl);
+      } catch (error) {
+        // Mercado Libre increasingly refuses /items/{id} to app-only tokens for listings
+        // owned by other sellers (403). The catalog product (same page) is still public.
+        if (
+          error instanceof MercadoLibreApiError &&
+          error.kind === "UNAUTHORIZED" &&
+          reference.fallbackCatalogProductId
+        ) {
+          const catalogId = encodeURIComponent(reference.fallbackCatalogProductId);
+          return mapCatalogProduct(await getJson(`/products/${catalogId}`), reference.canonicalUrl);
+        }
+        throw error;
+      }
     },
   };
 }

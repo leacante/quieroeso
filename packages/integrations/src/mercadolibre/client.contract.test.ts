@@ -92,6 +92,23 @@ describe("Mercado Libre client (recorded fixtures)", () => {
     });
   });
 
+  it("falls back to the catalog product when the item is 403 to the app token", async () => {
+    const { meli, calls } = client({
+      "GET /items/MLA1234567890": () => json('{"error":"access_denied"}', 403),
+      "GET /products/MLA20000002": () => json(fixture("product-catalog")),
+    });
+    const snapshot = await meli.fetchSnapshot({ ...itemRef, fallbackCatalogProductId: "MLA20000002" });
+    expect(snapshot).toMatchObject({ kind: "CATALOG_PRODUCT", externalId: "MLA20000002" });
+    expect(calls.some((call) => call.url.endsWith("/products/MLA20000002"))).toBe(true);
+  });
+
+  it("still throws when a 403 item has no fallback catalog product", async () => {
+    const { meli } = client({
+      "GET /items/MLA1234567890": () => json('{"error":"access_denied"}', 403),
+    });
+    await expect(meli.fetchSnapshot(itemRef)).rejects.toMatchObject({ kind: "UNAUTHORIZED" });
+  });
+
   it("reuses the application token", async () => {
     const { meli, calls } = client({
       "GET /items/MLA1234567890": () => json(fixture("item-active")),

@@ -57,35 +57,37 @@ Región única `us-east4` para los tres recursos (verificar el identificador exa
 - Si la CLI se instaló con npm, `railway config plan/apply` falla con
   "requires Railway CLI 5.42.1 or newer": el SDK ejecuta la ruta de la variable `_`.
   Usar el binario nativo y pasarle su ruta:
+
   ```bash
   R="/c/Program Files/nodejs/node_modules/@railway/cli/bin/railway.exe"
-  env _='C:\Program Files
+  env _="$(cygpath -w "$R")" QUIEROESO_GITHUB_REPO=leacante/quieroeso "$R" config plan
   ```
 
-odejs
-ode_modules\@railway\cliin
-ailway.exe' QUIEROESO_GITHUB_REPO=leacante/quieroeso "$R" config plan
+- Generar secretos quitando el retorno de carro que agrega el `openssl` de Git Bash
+  (si no, la clave deja de ser base64 válida):
 
-```
-- Generar secretos con `openssl rand -base64 32 | tr -d '
-'`: el `openssl` de Git Bash
-agrega `
-` y la clave deja de ser base64 válida.
+  ```bash
+  openssl rand -base64 32 | tr -d '\r\n'
+  ```
+
 - Railway rechaza `RUN --mount=type=cache` sin el id del servicio como prefijo; los
-Dockerfiles no usan caché de BuildKit.
+  Dockerfiles no usan caché de BuildKit.
 
 ## Rotación de la clave de cifrado
 
 1. Agregar `TOKEN_ENCRYPTION_KEY_V2` y cambiar `ACTIVE_TOKEN_KEY_VERSION=2` en `web` (y en el
- IaC). Los tokens existentes se siguen leyendo con V1; los nuevos se cifran con V2.
+   IaC). Los tokens existentes se siguen leyendo con V1; los nuevos se cifran con V2.
 2. Los tokens de Mercado Pago se re-cifran al renovarse. Retirar V1 sólo cuando no quede
- ningún `MercadoPagoConnection.keyVersion = 1` ni enlaces no listados cifrados con V1.
+   ningún `MercadoPagoConnection.keyVersion = 1` ni enlaces no listados cifrados con V1.
 
 ## Operación
 
 - **Backups**: habilitar backups diarios del volumen de PostgreSQL en Railway y probar una
-restauración antes del lanzamiento.
+  restauración antes del lanzamiento.
 - **Alertas**: alertas de Railway por fallas de deploy, healthcheck y cron fallido (código ≠ 0).
 - **Logs**: JSON (Pino) con redacción de secretos; nunca contienen tokens, cookies, enlaces
-secretos, mensajes de aportantes ni cuerpos de webhooks.
+  secretos, mensajes de aportantes ni cuerpos de webhooks.
+
+```
+
 ```
